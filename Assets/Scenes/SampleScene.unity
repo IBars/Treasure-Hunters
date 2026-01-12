@@ -380,12 +380,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dirtBlockPrefab: {fileID: 102092431646050029, guid: 381d43d27377cc84dbd8a41adba71670, type: 3}
-  grassBlockPrefab: {fileID: 7588396565298804591, guid: 3d6ce6030052e14469533dee92d92573, type: 3}
+  grassBlockPrefab: {fileID: 1183299095262134780, guid: 3d6ce6030052e14469533dee92d92573, type: 3}
   player: {fileID: 2064128153}
-  chunkSize: 16
-  maxHeight: 12
-  noiseScale: 0.03
+  chunkSize: 8
+  maxHeight: 8
+  noiseScale: 0.05
   viewDistance: 2
+  visibilityRadius: 5
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
