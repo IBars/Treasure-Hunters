@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2521509373321535200}
   m_Layer: 0
   m_Name: Dirt
-  m_TagString: Untagged
+  m_TagString: Undefined
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -108,7 +108,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 102092431646050029}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 7c421096f5d258c47999d3403f99a0b4, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
