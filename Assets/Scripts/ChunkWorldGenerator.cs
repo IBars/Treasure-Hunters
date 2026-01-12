@@ -3,118 +3,89 @@ using System.Collections.Generic;
 
 public class ChunkWorldGenerator : MonoBehaviour
 {
-    public GameObject dirtBlockPrefab;
-    public GameObject grassBlockPrefab;
+    public GameObject grassPrefab;
+    public GameObject dirtPrefab;
     public Transform player;
-
-    public int chunkSize = 16;
-    public int maxHeight = 12;
-    public float noiseScale = 0.08f;
-    public int viewDistance = 2;
     
-    // İstediğin 5 blokluk mesafe
-    public float visibilityRadius = 5f; 
+    [Header("Dünya Ayarları")]
+    public int chunkSize = 16;
+    public float noiseScale = 0.1f;
+    public int heightMultiplier = 10; // Dağların yüksekliği
 
-    Dictionary<Vector2Int, GameObject> chunks = new Dictionary<Vector2Int, GameObject>();
-    // Blokları ve rendererlarını eşleştiren liste
-    Dictionary<Vector2Int, List<MeshRenderer>> dirtRenderers = new Dictionary<Vector2Int, List<MeshRenderer>>();
+    private Dictionary<Vector2Int, GameObject> chunks = new Dictionary<Vector2Int, GameObject>();
+    private List<GameObject> allBlocks = new List<GameObject>();
 
     void Update()
     {
-        UpdateChunks();
-    }
+        int currentChunkX = Mathf.FloorToInt(player.position.x / chunkSize);
+        int currentChunkZ = Mathf.FloorToInt(player.position.z / chunkSize);
 
-    void UpdateChunks()
-    {
-        int playerChunkX = Mathf.FloorToInt(player.position.x / chunkSize);
-        int playerChunkZ = Mathf.FloorToInt(player.position.z / chunkSize);
-
-        for (int x = -viewDistance; x <= viewDistance; x++)
+        for (int x = -1; x <= 1; x++)
         {
-            for (int z = -viewDistance; z <= viewDistance; z++)
+            for (int z = -1; z <= 1; z++)
             {
-                Vector2Int chunkPos = new Vector2Int(playerChunkX + x, playerChunkZ + z);
-
+                Vector2Int chunkPos = new Vector2Int(currentChunkX + x, currentChunkZ + z);
                 if (!chunks.ContainsKey(chunkPos))
+                {
                     CreateChunk(chunkPos.x, chunkPos.y);
-                
-                // Her aktif chunk içindeki blokların mesafesini kontrol et
-                UpdateBlockVisibility(chunkPos);
-                
-                chunks[chunkPos].SetActive(true);
-            }
-        }
-
-        // Uzak chunkları kapatma
-        foreach (var chunk in chunks)
-        {
-            if (Mathf.Abs(chunk.Key.x - playerChunkX) > viewDistance || Mathf.Abs(chunk.Key.y - playerChunkZ) > viewDistance)
-            {
-                chunk.Value.SetActive(false);
+                }
             }
         }
     }
 
     void CreateChunk(int chunkX, int chunkZ)
     {
-        Vector2Int chunkKey = new Vector2Int(chunkX, chunkZ);
-        GameObject chunkObj = new GameObject($"Chunk_{chunkX}_{chunkZ}");
-        chunkObj.transform.parent = transform;
-        chunks.Add(chunkKey, chunkObj);
-        dirtRenderers.Add(chunkKey, new List<MeshRenderer>());
+        GameObject chunkParent = new GameObject("Chunk_" + chunkX + "_" + chunkZ);
+        chunks.Add(new Vector2Int(chunkX, chunkZ), chunkParent);
 
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
-                int worldX = chunkX * chunkSize + x;
-                int worldZ = chunkZ * chunkSize + z;
+                float worldX = chunkX * chunkSize + x;
+                float worldZ = chunkZ * chunkSize + z;
 
-                float noise = Mathf.PerlinNoise(worldX * noiseScale, worldZ * noiseScale);
-                int height = Mathf.RoundToInt(noise * maxHeight);
+                // Perlin Noise ile tepe yüksekliğini hesapla (Örn: 5, 8, 2 vb.)
+                int surfaceY = Mathf.FloorToInt(Mathf.PerlinNoise(worldX * noiseScale, worldZ * noiseScale) * heightMultiplier);
 
-                for (int y = 0; y <= height; y++)
+                // Döngü: En üstteki surfaceY'den başla, -1'e kadar in
+                for (int y = surfaceY; y >= -1; y--)
                 {
                     Vector3 pos = new Vector3(worldX, y, worldZ);
-                    GameObject prefabToSpawn = (y == height) ? grassBlockPrefab : dirtBlockPrefab;
-                    GameObject block = Instantiate(prefabToSpawn, pos, Quaternion.identity, chunkObj.transform);
-
-                    if (y != height) // Sadece dirt blokları için
+                    
+                    if (y == surfaceY)
                     {
-                        MeshRenderer mr = block.GetComponent<MeshRenderer>();
-                        if (mr != null)
-                        {
-                            mr.enabled = false;
-                            dirtRenderers[chunkKey].Add(mr);
-                        }
+                        // En üst katman her zaman Çim
+                        SpawnBlock(grassPrefab, pos, chunkParent, 0);
+                    }
+                    else
+                    {
+                        // Aradaki katmanlar -1'e kadar Toprak
+                        SpawnBlock(dirtPrefab, pos, chunkParent, 1);
                     }
                 }
+                // y = -2 ve altı döngüye girmediği için boşluk kalacak
             }
         }
     }
 
-    // Blok bazlı mesafe kontrolü
-    void UpdateBlockVisibility(Vector2Int chunkKey)
+    void SpawnBlock(GameObject prefab, Vector3 pos, GameObject parent, int id)
     {
-        if (dirtRenderers.ContainsKey(chunkKey))
-        {
-            foreach (MeshRenderer mr in dirtRenderers[chunkKey])
-            {
-                if (mr == null) continue;
+        GameObject blockObj = Instantiate(prefab, pos, Quaternion.identity, parent.transform);
+        Block b = blockObj.GetComponent<Block>() ?? blockObj.AddComponent<Block>();
+        b.blockID = id;
+        b.blockName = prefab.name;
+        allBlocks.Add(blockObj);
+    }
 
-                // Bloğun oyuncuya olan uzaklığını hesapla
-                float distance = Vector3.Distance(player.position, mr.transform.position);
+    public void RemoveBlockManually(GameObject block)
+    {
+        if (allBlocks.Contains(block)) allBlocks.Remove(block);
+        Destroy(block);
+    }
 
-                // 5 bloktan yakınsa aç, değilse kapat
-                if (distance <= visibilityRadius)
-                {
-                    if (!mr.enabled) mr.enabled = true;
-                }
-                else
-                {
-                    if (mr.enabled) mr.enabled = false;
-                }
-            }
-        }
+    public void RegisterNewBlock(GameObject block, Vector3Int pos)
+    {
+        allBlocks.Add(block);
     }
 }

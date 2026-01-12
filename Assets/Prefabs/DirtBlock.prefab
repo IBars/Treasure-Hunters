@@ -9,12 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7579885931013491657}
-  - component: {fileID: 6354133270667080812}
   - component: {fileID: 8110988747578218011}
   - component: {fileID: 2636441398734538275}
   - component: {fileID: 2521509373321535200}
+  - component: {fileID: 3079801512111352328}
   m_Layer: 0
-  m_Name: Dirt
+  m_Name: DirtBlock
   m_TagString: Undefined
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,19 +35,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6354133270667080812
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102092431646050029}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 725718d0a6934d2408ba816b813f6159, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  breakTime: 0.6
 --- !u!33 &8110988747578218011
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -122,3 +109,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3079801512111352328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102092431646050029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35c1315d0bb7cd8468d267c1ba3ffbd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blockName: DirtBlock
+  health: 0.6
+  blockID: 1
