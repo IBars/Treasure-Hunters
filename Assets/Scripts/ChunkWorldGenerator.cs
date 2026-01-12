@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 public class ChunkWorldGenerator : MonoBehaviour
 {
-    public GameObject blockPrefab;
+    public GameObject dirtBlockPrefab;   // Alt katman artık DirtBlock
+    public GameObject grassBlockPrefab;  // Üst katman
     public Transform player;
 
     public int chunkSize = 16;
@@ -74,7 +75,16 @@ public class ChunkWorldGenerator : MonoBehaviour
                 for (int y = 0; y <= height; y++)
                 {
                     Vector3 pos = new Vector3(worldX, y, worldZ);
-                    Instantiate(blockPrefab, pos, Quaternion.identity, chunkObj.transform);
+
+                    // Alt katman dirt, üst katman grass
+                    GameObject prefabToSpawn = (y == height) ? grassBlockPrefab : dirtBlockPrefab;
+                    GameObject block = Instantiate(prefabToSpawn, pos, Quaternion.identity, chunkObj.transform);
+
+                    // Üst katmana GrassBlock tag ekle
+                    if (y == height)
+                    {
+                        block.tag = "GrassBlock";
+                    }
                 }
             }
         }

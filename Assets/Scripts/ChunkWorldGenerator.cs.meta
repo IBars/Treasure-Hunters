@@ -1,2 +1,14 @@
 fileFormatVersion: 2
 guid: 421d493659fb1de47a779a5bbe20283e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - blockPrefab: {fileID: 102092431646050029, guid: 381d43d27377cc84dbd8a41adba71670, type: 3}
+  - grassBlockPrefab: {fileID: 7588396565298804591, guid: 3d6ce6030052e14469533dee92d92573, type: 3}
+  - player: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
