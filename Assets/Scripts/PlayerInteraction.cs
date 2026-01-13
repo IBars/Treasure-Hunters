@@ -63,14 +63,21 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     void HandleMining()
+{
+    // GetMouseButtonDown yerine GetMouseButton (Basılı tutma)
+    if (Input.GetMouseButton(0)) 
     {
-        if (Input.GetMouseButtonDown(0)) // Sol Tık: Kazma
+        Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
+        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
         {
-            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
-            if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
+            Block b = hit.collider.GetComponent<Block>();
+            if (b != null)
             {
-                Block b = hit.collider.GetComponent<Block>();
-                if (b != null)
+                // Time.deltaTime kullanarak zamanla can azaltıyoruz
+                // 2.0f değerini artırırsan daha zor kırılır
+                b.health -= Time.deltaTime * 2.0f; 
+
+                if (b.health <= 0)
                 {
                     AddToInventory(b.blockID);
                     worldGenerator.RemoveBlockManually(hit.collider.gameObject);
@@ -78,6 +85,7 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
     }
+}
 
     void HandleBuilding()
     {

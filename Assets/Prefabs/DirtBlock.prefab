@@ -121,6 +121,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35c1315d0bb7cd8468d267c1ba3ffbd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockName: DirtBlock
-  health: 0.6
   blockID: 1
+  health: 1

@@ -2,7 +2,15 @@ using UnityEngine;
 
 public class Block : MonoBehaviour
 {
-    public string blockName;
-    public float health = 0.6f;
-    public int blockID; // 0: Grass, 1: Dirt gibi
+    public int blockID;
+    public float health = 1.0f; // Blokların canı (Örn: 1 saniyede kırılsın)
+
+    public void TakeDamage(float amount)
+    {
+        health -= amount;
+        if (health <= 0)
+        {
+            // Bu kısım boş kalabilir, PlayerInteraction içinde yok edeceğiz
+        }
+    }
 }

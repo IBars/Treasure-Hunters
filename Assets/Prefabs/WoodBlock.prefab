@@ -551,7 +551,6 @@ GameObject:
   - component: {fileID: 8579656424003340823}
   - component: {fileID: 8817699340046763501}
   - component: {fileID: 2072184691191488450}
-  - component: {fileID: 7475051909723146604}
   m_Layer: 0
   m_Name: WoodBlock
   m_TagString: Untagged
@@ -609,21 +608,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7445380190104858834}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &7475051909723146604
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7445380190104858834}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35c1315d0bb7cd8468d267c1ba3ffbd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  blockName: GrassBlock
-  health: 0.6
-  blockID: 0
 --- !u!1 &8030648347693653180
 GameObject:
   m_ObjectHideFlags: 0

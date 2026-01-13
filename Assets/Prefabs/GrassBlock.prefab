@@ -81,9 +81,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35c1315d0bb7cd8468d267c1ba3ffbd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockName: GrassBlock
-  health: 0.6
   blockID: 0
+  health: 1
 --- !u!1 &4637738488864310684
 GameObject:
   m_ObjectHideFlags: 0
