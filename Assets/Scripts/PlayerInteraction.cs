@@ -1,180 +1,181 @@
 using UnityEngine;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine.UI;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    public ChunkWorldGenerator worldGen;
-    public float range = 5f;
+    public float interactionDistance = 5f;
+    public Transform player;
+    public ChunkWorldGenerator worldGenerator;
 
-    [Header("Envanter Ayarları")]
-    public List<GameObject> blockPrefabs; // Blokların prefabları (0: Grass, 1: Dirt vb.)
-    public Sprite[] blockIcons;           // Senin yaptığın şeffaf Sprite'lar (ID sırasına göre)
-    
-    [HideInInspector] public int[] inventoryCounts; 
-    [HideInInspector] public int[] slotBlockIDs;    
+    [Header("Envanter Verileri")]
+    public int[] inventoryCounts = new int[10];
+    public int[] slotBlockIDs = new int[10]; // -1: Boş, 0: Grass, 1: Dirt vb.
+
+    [Header("UI Elemanları")]
+    public Image[] slotIcons;
+    public TextMeshProUGUI[] slotTexts;
+    public Sprite[] blockIcons; // Sprite listesi (Grass, Dirt)
+    public RectTransform selectionFrame;
+
+    [Header("Elde Tutma Ayarları")]
+    public GameObject[] handBlocks; // Eldeki 3D modeller (Grass, Dirt)
     public int selectedSlot = 0;
 
-    [Header("UI Ayarları (Slot Sayısı Kadar Sürükle)")]
-    public TextMeshProUGUI[] slotTexts; 
-    public Image[] slotIcons;            
-
-    private float breakTimer = 0f;
-
-    void Awake()
+    void Start()
     {
-        // Kaç tane slot sürüklediysen envanter o kadar büyük olur (Hata önleyici)
-        int slotCount = slotTexts.Length;
-        
-        // Eğer slot sürüklemeyi unuttuysan kodun çökmesini engelle
-        if (slotCount == 0) slotCount = 10; 
-
-        inventoryCounts = new int[slotCount];
-        slotBlockIDs = new int[slotCount];
-
-        for (int i = 0; i < slotCount; i++)
+        // Envanteri boş başlat
+        for (int i = 0; i < 10; i++)
         {
             slotBlockIDs[i] = -1;
-            inventoryCounts[i] = 0;
         }
+        UpdateUI();
+        UpdateSelectionUI();
     }
 
     void Update()
     {
-        HandleSlotSelection();
-        HandleInteraction();
-        UpdateUI();
+        HandleSelection();
+        HandleMining();
+        HandleBuilding();
     }
 
-    void HandleSlotSelection()
+    void HandleSelection()
     {
-        for (int i = 0; i < slotTexts.Length; i++)
-        {
-            KeyCode key = (i == 9) ? KeyCode.Alpha0 : KeyCode.Alpha1 + i;
-            if (Input.GetKeyDown(key)) selectedSlot = i;
-        }
-
+        // Mouse tekerleği ile geçiş
         float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll < 0f) selectedSlot = (selectedSlot + 1) % slotTexts.Length;
-        else if (scroll > 0f) selectedSlot = (selectedSlot == 0) ? slotTexts.Length - 1 : selectedSlot - 1;
+        if (scroll != 0)
+        {
+            if (scroll > 0f) selectedSlot = (selectedSlot <= 0) ? 9 : selectedSlot - 1;
+            else if (scroll < 0f) selectedSlot = (selectedSlot >= 9) ? 0 : selectedSlot + 1;
+            UpdateSelectionUI();
+        }
+
+        // Sayı tuşları (1-0)
+        for (int i = 0; i < 10; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                selectedSlot = i;
+                UpdateSelectionUI();
+            }
+        }
     }
 
-    void HandleInteraction()
+    void HandleMining()
     {
-        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, range))
+        if (Input.GetMouseButtonDown(0)) // Sol Tık: Kazma
         {
-            if (Input.GetMouseButton(0))
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
+            if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
             {
-                Block target = hit.collider.GetComponent<Block>();
-                if (target != null)
+                Block b = hit.collider.GetComponent<Block>();
+                if (b != null)
                 {
-                    breakTimer += Time.deltaTime;
-                    if (breakTimer >= target.health)
-                    {
-                        AddToInventory(target.blockID);
-                        worldGen.RemoveBlockManually(hit.collider.gameObject);
-                        breakTimer = 0;
-                    }
-                }
-            }
-            else { breakTimer = 0; }
-
-            if (Input.GetMouseButtonDown(1))
-            {
-                if (selectedSlot < slotBlockIDs.Length)
-                {
-                    int currentBlockID = slotBlockIDs[selectedSlot];
-                    if (currentBlockID != -1 && inventoryCounts[selectedSlot] > 0)
-                    {
-                        PlaceBlock(currentBlockID);
-                    }
+                    AddToInventory(b.blockID);
+                    worldGenerator.RemoveBlockManually(hit.collider.gameObject);
                 }
             }
         }
-        else { breakTimer = 0; }
     }
 
-    void AddToInventory(int blockID)
+    void HandleBuilding()
     {
-        for (int i = 0; i < slotBlockIDs.Length; i++)
+        if (Input.GetMouseButtonDown(1)) // Sağ Tık: Koyma
         {
-            if (slotBlockIDs[i] == blockID)
+            // Elimizde blok var mı kontrolü
+            if (inventoryCounts[selectedSlot] > 0 && slotBlockIDs[selectedSlot] != -1)
+            {
+                Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
+                if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
+                {
+                    Vector3 spawnPos = hit.transform.position + hit.normal;
+                    GameObject prefab = (slotBlockIDs[selectedSlot] == 0) ? worldGenerator.grassPrefab : worldGenerator.dirtPrefab;
+                    
+                    GameObject newBlock = Instantiate(prefab, spawnPos, Quaternion.identity);
+                    worldGenerator.RegisterNewBlock(newBlock, Vector3Int.RoundToInt(spawnPos));
+                    
+                    inventoryCounts[selectedSlot]--;
+                    UpdateUI();
+                    UpdateSelectionUI(); // Elindeki blok biterse gizlemek için
+                }
+            }
+        }
+    }
+
+    void AddToInventory(int id)
+    {
+        // Önce aynı tipten var mı bak
+        for (int i = 0; i < 10; i++)
+        {
+            if (slotBlockIDs[i] == id)
             {
                 inventoryCounts[i]++;
+                UpdateUI();
                 return;
             }
         }
 
-        for (int i = 0; i < slotBlockIDs.Length; i++)
+        // Yoksa boş slot bul
+        for (int i = 0; i < 10; i++)
         {
             if (slotBlockIDs[i] == -1)
             {
-                slotBlockIDs[i] = blockID;
+                slotBlockIDs[i] = id;
                 inventoryCounts[i] = 1;
+                UpdateUI();
                 return;
-            }
-        }
-    }
-
-    void PlaceBlock(int blockID)
-    {
-        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, range))
-        {
-            Vector3 spawnPos = hit.transform.position + hit.normal;
-            Vector3Int finalPos = Vector3Int.RoundToInt(spawnPos);
-
-            GameObject newBlock = Instantiate(blockPrefabs[blockID], (Vector3)finalPos, Quaternion.identity);
-            Block b = newBlock.GetComponent<Block>() ?? newBlock.AddComponent<Block>();
-            b.blockID = blockID;
-            b.health = 0.6f;
-
-            worldGen.RegisterNewBlock(newBlock, finalPos);
-            
-            inventoryCounts[selectedSlot]--;
-            if (inventoryCounts[selectedSlot] <= 0)
-            {
-                slotBlockIDs[selectedSlot] = -1;
             }
         }
     }
 
     void UpdateUI()
     {
-        // Dizinin gerçek uzunluğu kadar dön (Index hatasını bitiren yer burası)
-        for (int i = 0; i < slotTexts.Length; i++)
+        for (int i = 0; i < 10; i++)
         {
-            if (slotTexts[i] == null) continue;
-
-            // Sayı Yazısı
-            slotTexts[i].text = (inventoryCounts[i] > 0) ? inventoryCounts[i].ToString() : "";
-
-            // İkon (Sprite)
-            if (i < slotIcons.Length && slotIcons[i] != null)
+            if (inventoryCounts[i] > 0)
             {
-                int idInSlot = slotBlockIDs[i];
-                if (idInSlot != -1 && idInSlot < blockIcons.Length && blockIcons[idInSlot] != null)
-                {
-                    slotIcons[i].sprite = blockIcons[idInSlot];
-                    slotIcons[i].color = Color.white;
-                }
-                else
-                {
-                    slotIcons[i].sprite = null;
-                    slotIcons[i].color = new Color(0, 0, 0, 0);
-                }
+                slotIcons[i].enabled = true;
+                slotIcons[i].sprite = blockIcons[slotBlockIDs[i]];
+                slotTexts[i].text = inventoryCounts[i].ToString();
             }
-
-            // Seçili Slot Görseli
-            Image slotBg = slotTexts[i].transform.parent.GetComponent<Image>();
-            if (slotBg != null)
+            else
             {
-                slotBg.color = (i == selectedSlot) ? new Color(0.1f, 0.1f, 0.1f, 0.8f) : new Color(0.3f, 0.3f, 0.3f, 0.4f);
+                slotIcons[i].enabled = false;
+                slotTexts[i].text = "";
+                slotBlockIDs[i] = -1;
             }
         }
     }
+
+    // ... (scriptin üst kısmı aynı kalacak)
+
+    void UpdateSelectionUI()
+{
+    // 1. Slotların renklerini sıfırla ve seçili olanı koyulaştır
+    for (int i = 0; i < slotIcons.Length; i++)
+    {
+        // Slotun arkaplan resmine (parent) ulaşıp rengini değiştiriyoruz
+        Image slotBg = slotIcons[i].transform.parent.GetComponent<Image>();
+        
+        if (i == selectedSlot)
+        {
+            slotBg.color = new Color(0.5f, 0.5f, 0.5f, 1f); // Seçili olanı koyulaştır (Gri yap)
+        }
+        else
+        {
+            slotBg.color = Color.white; // Diğerlerini normal (Beyaz/Açık) bırak
+        }
+    }
+
+    // 2. Elindeki 3D modelleri göster/gizle
+    for (int i = 0; i < handBlocks.Length; i++)
+    {
+        if (handBlocks[i] != null)
+        {
+            bool shouldShow = (slotBlockIDs[selectedSlot] == i && inventoryCounts[selectedSlot] > 0);
+            handBlocks[i].SetActive(shouldShow);
+        }
+    }
+}
 }
