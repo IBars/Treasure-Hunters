@@ -10,21 +10,20 @@ public class PlayerInteraction : MonoBehaviour
 
     [Header("Envanter Verileri")]
     public int[] inventoryCounts = new int[10];
-    public int[] slotBlockIDs = new int[10]; // -1: Boş, 0: Grass, 1: Dirt vb.
+    public int[] slotBlockIDs = new int[10]; // -1: Boş, 0: Grass, 1: Dirt
 
     [Header("UI Elemanları")]
     public Image[] slotIcons;
     public TextMeshProUGUI[] slotTexts;
-    public Sprite[] blockIcons; // Sprite listesi (Grass, Dirt)
-    public RectTransform selectionFrame;
+    public Sprite[] blockIcons; 
 
-    [Header("Elde Tutma Ayarları")]
-    public GameObject[] handBlocks; // Eldeki 3D modeller (Grass, Dirt)
+    [Header("Elde Tutma ve Seçim")]
+    public GameObject[] handBlocks; // Eldeki 3D modeller
     public int selectedSlot = 0;
+    public float breakSpeed = 2.0f; // Blok kırma hızı (Yüksek sayı = Daha hızlı)
 
     void Start()
     {
-        // Envanteri boş başlat
         for (int i = 0; i < 10; i++)
         {
             slotBlockIDs[i] = -1;
@@ -42,7 +41,6 @@ public class PlayerInteraction : MonoBehaviour
 
     void HandleSelection()
     {
-        // Mouse tekerleği ile geçiş
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0)
         {
@@ -51,7 +49,6 @@ public class PlayerInteraction : MonoBehaviour
             UpdateSelectionUI();
         }
 
-        // Sayı tuşları (1-0)
         for (int i = 0; i < 10; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
@@ -63,35 +60,33 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     void HandleMining()
-{
-    // GetMouseButtonDown yerine GetMouseButton (Basılı tutma)
-    if (Input.GetMouseButton(0)) 
     {
-        Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
-        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
+        // GetMouseButton(0) - Basılı tutulduğu sürece çalışır
+        if (Input.GetMouseButton(0))
         {
-            Block b = hit.collider.GetComponent<Block>();
-            if (b != null)
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
+            if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
             {
-                // Time.deltaTime kullanarak zamanla can azaltıyoruz
-                // 2.0f değerini artırırsan daha zor kırılır
-                b.health -= Time.deltaTime * 2.0f; 
-
-                if (b.health <= 0)
+                Block b = hit.collider.GetComponent<Block>();
+                if (b != null)
                 {
-                    AddToInventory(b.blockID);
-                    worldGenerator.RemoveBlockManually(hit.collider.gameObject);
+                    // Bloğa zamanla hasar ver
+                    b.health -= Time.deltaTime * breakSpeed;
+
+                    if (b.health <= 0)
+                    {
+                        AddToInventory(b.blockID);
+                        worldGenerator.RemoveBlockManually(hit.collider.gameObject);
+                    }
                 }
             }
         }
     }
-}
 
     void HandleBuilding()
     {
         if (Input.GetMouseButtonDown(1)) // Sağ Tık: Koyma
         {
-            // Elimizde blok var mı kontrolü
             if (inventoryCounts[selectedSlot] > 0 && slotBlockIDs[selectedSlot] != -1)
             {
                 Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
@@ -105,7 +100,7 @@ public class PlayerInteraction : MonoBehaviour
                     
                     inventoryCounts[selectedSlot]--;
                     UpdateUI();
-                    UpdateSelectionUI(); // Elindeki blok biterse gizlemek için
+                    UpdateSelectionUI(); 
                 }
             }
         }
@@ -113,7 +108,6 @@ public class PlayerInteraction : MonoBehaviour
 
     void AddToInventory(int id)
     {
-        // Önce aynı tipten var mı bak
         for (int i = 0; i < 10; i++)
         {
             if (slotBlockIDs[i] == id)
@@ -124,7 +118,6 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        // Yoksa boş slot bul
         for (int i = 0; i < 10; i++)
         {
             if (slotBlockIDs[i] == -1)
@@ -137,7 +130,7 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
-    void UpdateUI()
+    public void UpdateUI()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -151,39 +144,32 @@ public class PlayerInteraction : MonoBehaviour
             {
                 slotIcons[i].enabled = false;
                 slotTexts[i].text = "";
-                slotBlockIDs[i] = -1;
+                // Eğer miktar 0 ise ID'yi sıfırla ki slot boşalsın
+                if(inventoryCounts[i] <= 0) slotBlockIDs[i] = -1;
             }
         }
     }
 
-    // ... (scriptin üst kısmı aynı kalacak)
-
     void UpdateSelectionUI()
-{
-    // 1. Slotların renklerini sıfırla ve seçili olanı koyulaştır
-    for (int i = 0; i < slotIcons.Length; i++)
     {
-        // Slotun arkaplan resmine (parent) ulaşıp rengini değiştiriyoruz
-        Image slotBg = slotIcons[i].transform.parent.GetComponent<Image>();
-        
-        if (i == selectedSlot)
+        // 1. Renk Değişimi (Seçili koyu gri, diğerleri açık gri)
+        for (int i = 0; i < slotIcons.Length; i++)
         {
-            slotBg.color = new Color(0.5f, 0.5f, 0.5f, 1f); // Seçili olanı koyulaştır (Gri yap)
+            Image slotBg = slotIcons[i].transform.parent.GetComponent<Image>();
+            if (i == selectedSlot)
+                slotBg.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Koyu Gri
+            else
+                slotBg.color = new Color(0.7f, 0.7f, 0.7f, 1f); // Açık Gri
         }
-        else
-        {
-            slotBg.color = Color.white; // Diğerlerini normal (Beyaz/Açık) bırak
-        }
-    }
 
-    // 2. Elindeki 3D modelleri göster/gizle
-    for (int i = 0; i < handBlocks.Length; i++)
-    {
-        if (handBlocks[i] != null)
+        // 2. Eldeki 3D Model Kontrolü
+        for (int i = 0; i < handBlocks.Length; i++)
         {
-            bool shouldShow = (slotBlockIDs[selectedSlot] == i && inventoryCounts[selectedSlot] > 0);
-            handBlocks[i].SetActive(shouldShow);
+            if (handBlocks[i] != null)
+            {
+                bool shouldShow = (slotBlockIDs[selectedSlot] == i && inventoryCounts[selectedSlot] > 0);
+                handBlocks[i].SetActive(shouldShow);
+            }
         }
     }
-}
 }
