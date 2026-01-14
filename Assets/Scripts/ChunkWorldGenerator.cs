@@ -4,11 +4,13 @@ using System.Collections.Generic;
 
 public class ChunkWorldGenerator : MonoBehaviour
 {
+    public static ChunkWorldGenerator Instance;
+
     [Header("Block Prefabs")]
     public GameObject grassPrefab;
     public GameObject dirtPrefab;
     public GameObject stonePrefab;
-    public GameObject cobblePrefab; // 🔥 EKLENDİ
+    public GameObject cobblePrefab;
 
     public Transform player;
 
@@ -19,9 +21,14 @@ public class ChunkWorldGenerator : MonoBehaviour
     public int heightMultiplier = 15;
     public int baseHeight = 20;
 
-    private Dictionary<Vector3Int, GameObject> chunks = new Dictionary<Vector3Int, GameObject>();
+    private Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
     private Vector3Int lastPlayerChunk = new Vector3Int(999, 0, 999);
     private bool generating = false;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Update()
     {
@@ -43,26 +50,26 @@ public class ChunkWorldGenerator : MonoBehaviour
     IEnumerator ManageChunks(Vector3Int center)
     {
         generating = true;
-        HashSet<Vector3Int> active = new HashSet<Vector3Int>();
+        HashSet<Vector3Int> needed = new HashSet<Vector3Int>();
 
         for (int x = -viewDistance; x <= viewDistance; x++)
         {
             for (int z = -viewDistance; z <= viewDistance; z++)
             {
                 Vector3Int coord = new Vector3Int(center.x + x, 0, center.z + z);
-                active.Add(coord);
+                needed.Add(coord);
 
                 if (!chunks.ContainsKey(coord))
                     yield return StartCoroutine(CreateChunk(coord));
                 else
-                    chunks[coord].SetActive(true);
+                    chunks[coord].root.SetActive(true);
             }
         }
 
-        foreach (var c in new List<Vector3Int>(chunks.Keys))
+        foreach (var pair in chunks)
         {
-            if (!active.Contains(c))
-                chunks[c].SetActive(false);
+            if (!needed.Contains(pair.Key))
+                pair.Value.root.SetActive(false);
         }
 
         generating = false;
@@ -70,12 +77,14 @@ public class ChunkWorldGenerator : MonoBehaviour
 
     IEnumerator CreateChunk(Vector3Int coord)
     {
-        GameObject chunk = new GameObject($"Chunk_{coord.x}_{coord.z}");
-        chunk.transform.parent = transform;
+        GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
+        chunkObj.transform.parent = transform;
+
+        Chunk chunk = new Chunk(coord, chunkObj);
         chunks.Add(coord, chunk);
 
-        int blocksPerFrame = 400;
         int counter = 0;
+        int blocksPerFrame = 300;
 
         for (int x = 0; x < chunkSize; x++)
         {
@@ -92,31 +101,17 @@ public class ChunkWorldGenerator : MonoBehaviour
                     GameObject prefab;
                     int id;
 
-                    if (y == surfaceY)
-                    {
-                        prefab = grassPrefab;
-                        id = 0;
-                    }
-                    else if (y >= surfaceY - 5)
-                    {
-                        prefab = dirtPrefab;
-                        id = 1;
-                    }
-                    else
-                    {
-                        prefab = stonePrefab;
-                        id = 2;
-                    }
+                    if (y == surfaceY) { prefab = grassPrefab; id = 0; }
+                    else if (y >= surfaceY - 5) { prefab = dirtPrefab; id = 1; }
+                    else { prefab = stonePrefab; id = 2; }
 
-                    GameObject blockObj = Instantiate(
-                        prefab,
-                        new Vector3(worldX, y, worldZ),
-                        Quaternion.identity,
-                        chunk.transform
-                    );
+                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
 
-                    Block block = blockObj.GetComponent<Block>() ?? blockObj.AddComponent<Block>();
+                    GameObject blockObj = Instantiate(prefab, pos, Quaternion.identity, chunkObj.transform);
+                    Block block = blockObj.GetComponent<Block>();
                     block.blockID = id;
+
+                    chunk.blocks[pos] = block;
 
                     counter++;
                     if (counter >= blocksPerFrame)
@@ -129,17 +124,40 @@ public class ChunkWorldGenerator : MonoBehaviour
         }
     }
 
-    // ===============================
-    // 🔧 PlayerInteraction UYUMLULUK
-    // ===============================
+    // =====================
+    // DATA & VISIBILITY
+    // =====================
 
-    public void RemoveBlockManually(GameObject block)
+    public bool HasBlock(Vector3Int worldPos)
     {
-        if (block != null)
-            Destroy(block);
+        Vector3Int chunkCoord = new Vector3Int(
+            Mathf.FloorToInt((float)worldPos.x / chunkSize),
+            0,
+            Mathf.FloorToInt((float)worldPos.z / chunkSize)
+        );
+
+        if (!chunks.ContainsKey(chunkCoord)) return false;
+        return chunks[chunkCoord].blocks.ContainsKey(worldPos);
     }
 
-    public void RegisterNewBlock(GameObject block, Vector3Int worldPos)
+    public void RemoveBlockManually(GameObject blockObj)
+    {
+        Vector3Int pos = Vector3Int.RoundToInt(blockObj.transform.position);
+
+        Vector3Int chunkCoord = new Vector3Int(
+            Mathf.FloorToInt((float)pos.x / chunkSize),
+            0,
+            Mathf.FloorToInt((float)pos.z / chunkSize)
+        );
+
+        if (chunks.ContainsKey(chunkCoord))
+            chunks[chunkCoord].blocks.Remove(pos);
+
+        Destroy(blockObj);
+        CheckNeighbors(pos);
+    }
+
+    public void RegisterNewBlock(GameObject blockObj, Vector3Int worldPos)
     {
         Vector3Int chunkCoord = new Vector3Int(
             Mathf.FloorToInt((float)worldPos.x / chunkSize),
@@ -149,12 +167,39 @@ public class ChunkWorldGenerator : MonoBehaviour
 
         if (chunks.ContainsKey(chunkCoord))
         {
-            block.transform.parent = chunks[chunkCoord].transform;
+            blockObj.transform.parent = chunks[chunkCoord].root.transform;
+            Block b = blockObj.GetComponent<Block>();
+            chunks[chunkCoord].blocks[worldPos] = b;
+
+            b.CheckVisibility(this);
+            CheckNeighbors(worldPos);
         }
-        else
+    }
+
+    void CheckNeighbors(Vector3Int pos)
+    {
+        Vector3Int[] dirs =
         {
-            // Güvenlik: chunk yoksa world altında kalsın
-            block.transform.parent = transform;
+            Vector3Int.up, Vector3Int.down,
+            Vector3Int.left, Vector3Int.right,
+            new Vector3Int(0,0,1), new Vector3Int(0,0,-1)
+        };
+
+        foreach (var d in dirs)
+        {
+            Vector3Int nPos = pos + d;
+
+            Vector3Int chunkCoord = new Vector3Int(
+                Mathf.FloorToInt((float)nPos.x / chunkSize),
+                0,
+                Mathf.FloorToInt((float)nPos.z / chunkSize)
+            );
+
+            if (chunks.ContainsKey(chunkCoord) &&
+                chunks[chunkCoord].blocks.TryGetValue(nPos, out Block b))
+            {
+                b.CheckVisibility(this);
+            }
         }
     }
 }
