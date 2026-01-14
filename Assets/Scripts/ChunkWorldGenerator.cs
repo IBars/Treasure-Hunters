@@ -4,166 +4,157 @@ using System.Collections.Generic;
 
 public class ChunkWorldGenerator : MonoBehaviour
 {
+    [Header("Block Prefabs")]
     public GameObject grassPrefab;
     public GameObject dirtPrefab;
-    public GameObject stonePrefab; // Inspector'dan Stone ekle
-    public GameObject cobblePrefab; // Inspector'dan Cobblestone ekle
+    public GameObject stonePrefab;
+    public GameObject cobblePrefab; // 🔥 EKLENDİ
+
     public Transform player;
-    
-    [Header("Dünya Ayarları")]
-    public int viewDistance = 2;
+
+    [Header("World Settings")]
     public int chunkSize = 16;
-    public float noiseScale = 0.1f;
-    public int heightMultiplier = 10; 
+    public int viewDistance = 2;
+    public float noiseScale = 0.05f;
+    public int heightMultiplier = 15;
+    public int baseHeight = 20;
 
     private Dictionary<Vector3Int, GameObject> chunks = new Dictionary<Vector3Int, GameObject>();
-    private Vector3Int lastPlayerChunkPos = new Vector3Int(-99, -99, -99);
-    private bool isGenerating = false;
+    private Vector3Int lastPlayerChunk = new Vector3Int(999, 0, 999);
+    private bool generating = false;
 
     void Update()
     {
-        if (player == null) return;
+        if (!player || generating) return;
 
-        Vector3Int currentPlayerChunkPos = new Vector3Int(
+        Vector3Int currentChunk = new Vector3Int(
             Mathf.FloorToInt(player.position.x / chunkSize),
-            Mathf.FloorToInt(player.position.y / chunkSize),
+            0,
             Mathf.FloorToInt(player.position.z / chunkSize)
         );
 
-        if (currentPlayerChunkPos != lastPlayerChunkPos && !isGenerating)
+        if (currentChunk != lastPlayerChunk)
         {
-            StartCoroutine(ManageChunksCoroutine(currentPlayerChunkPos));
-            lastPlayerChunkPos = currentPlayerChunkPos;
+            StartCoroutine(ManageChunks(currentChunk));
+            lastPlayerChunk = currentChunk;
         }
     }
 
-    IEnumerator ManageChunksCoroutine(Vector3Int centerChunk)
+    IEnumerator ManageChunks(Vector3Int center)
     {
-        isGenerating = true;
-        HashSet<Vector3Int> activeCoords = new HashSet<Vector3Int>();
+        generating = true;
+        HashSet<Vector3Int> active = new HashSet<Vector3Int>();
 
         for (int x = -viewDistance; x <= viewDistance; x++)
         {
-            for (int y = -viewDistance; y <= viewDistance; y++)
+            for (int z = -viewDistance; z <= viewDistance; z++)
             {
-                for (int z = -viewDistance; z <= viewDistance; z++)
-                {
-                    Vector3Int coords = new Vector3Int(centerChunk.x + x, centerChunk.y + y, centerChunk.z + z);
-                    activeCoords.Add(coords);
+                Vector3Int coord = new Vector3Int(center.x + x, 0, center.z + z);
+                active.Add(coord);
 
-                    if (!chunks.ContainsKey(coords))
-                    {
-                        yield return StartCoroutine(Create3DChunkCoroutine(coords));
-                    }
-                    else if (!chunks[coords].activeSelf)
-                    {
-                        chunks[coords].SetActive(true);
-                    }
-                }
+                if (!chunks.ContainsKey(coord))
+                    yield return StartCoroutine(CreateChunk(coord));
+                else
+                    chunks[coord].SetActive(true);
             }
         }
 
-        List<Vector3Int> keys = new List<Vector3Int>(chunks.Keys);
-        foreach (var key in keys)
+        foreach (var c in new List<Vector3Int>(chunks.Keys))
         {
-            if (!activeCoords.Contains(key))
-            {
-                chunks[key].SetActive(false);
-            }
+            if (!active.Contains(c))
+                chunks[c].SetActive(false);
         }
 
-        isGenerating = false;
+        generating = false;
     }
 
-    IEnumerator Create3DChunkCoroutine(Vector3Int coords)
+    IEnumerator CreateChunk(Vector3Int coord)
     {
-        GameObject chunkParent = new GameObject($"Chunk_{coords.x}_{coords.y}_{coords.z}");
-        chunkParent.transform.parent = this.transform;
-        chunks.Add(coords, chunkParent);
+        GameObject chunk = new GameObject($"Chunk_{coord.x}_{coord.z}");
+        chunk.transform.parent = transform;
+        chunks.Add(coord, chunk);
 
-        int blocksCreatedThisFrame = 0;
-        int blocksPerFrame = 500; 
+        int blocksPerFrame = 400;
+        int counter = 0;
 
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
-                float worldX = coords.x * chunkSize + x;
-                float worldZ = coords.z * chunkSize + z;
-                int surfaceY = Mathf.FloorToInt(Mathf.PerlinNoise(worldX * noiseScale, worldZ * noiseScale) * heightMultiplier);
+                int worldX = coord.x * chunkSize + x;
+                int worldZ = coord.z * chunkSize + z;
 
-                for (int y = 0; y < chunkSize; y++)
+                float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
+                int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
+
+                for (int y = surfaceY; y >= surfaceY - 25; y--)
                 {
-                    int worldY = coords.y * chunkSize + y;
+                    GameObject prefab;
+                    int id;
 
-                    if (worldY <= surfaceY && worldY >= -10)
+                    if (y == surfaceY)
                     {
-                        Vector3 pos = new Vector3(worldX, worldY, worldZ);
-                        GameObject prefab;
-                        int id;
+                        prefab = grassPrefab;
+                        id = 0;
+                    }
+                    else if (y >= surfaceY - 5)
+                    {
+                        prefab = dirtPrefab;
+                        id = 1;
+                    }
+                    else
+                    {
+                        prefab = stonePrefab;
+                        id = 2;
+                    }
 
-                        // DERİNLİK MANTIĞI
-                        if (worldY == surfaceY) {
-                            prefab = grassPrefab;
-                            id = 0;
-                        }
-                        else if (worldY > surfaceY - 3) {
-                            prefab = dirtPrefab;
-                            id = 1;
-                        }
-                        else {
-                            prefab = stonePrefab; 
-                            id = 2;
-                        }
+                    GameObject blockObj = Instantiate(
+                        prefab,
+                        new Vector3(worldX, y, worldZ),
+                        Quaternion.identity,
+                        chunk.transform
+                    );
 
-                        SpawnBlock(prefab, pos, chunkParent, id);
+                    Block block = blockObj.GetComponent<Block>() ?? blockObj.AddComponent<Block>();
+                    block.blockID = id;
 
-                        blocksCreatedThisFrame++;
-                        if (blocksCreatedThisFrame >= blocksPerFrame)
-                        {
-                            blocksCreatedThisFrame = 0;
-                            yield return null; 
-                        }
+                    counter++;
+                    if (counter >= blocksPerFrame)
+                    {
+                        counter = 0;
+                        yield return null;
                     }
                 }
             }
         }
     }
 
-    void SpawnBlock(GameObject prefab, Vector3 pos, GameObject parent, int id)
-    {
-        if (prefab == null) return;
-        GameObject blockObj = Instantiate(prefab, pos, Quaternion.identity, parent.transform);
-        
-        Renderer blockRenderer = blockObj.GetComponentInChildren<Renderer>();
-        if (blockRenderer != null)
-        {
-            if (Vector3.Distance(player.position, pos) > chunkSize * 1.5f) 
-            {
-                blockRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-        }
-        
-        Block b = blockObj.GetComponent<Block>() ?? blockObj.AddComponent<Block>();
-        b.blockID = id;
-    }
+    // ===============================
+    // 🔧 PlayerInteraction UYUMLULUK
+    // ===============================
 
     public void RemoveBlockManually(GameObject block)
     {
-        if (block != null) Destroy(block);
+        if (block != null)
+            Destroy(block);
     }
 
-    public void RegisterNewBlock(GameObject block, Vector3Int pos)
+    public void RegisterNewBlock(GameObject block, Vector3Int worldPos)
     {
-        Vector3Int chunkCoords = new Vector3Int(
-            Mathf.FloorToInt((float)pos.x / chunkSize),
-            Mathf.FloorToInt((float)pos.y / chunkSize),
-            Mathf.FloorToInt((float)pos.z / chunkSize)
+        Vector3Int chunkCoord = new Vector3Int(
+            Mathf.FloorToInt((float)worldPos.x / chunkSize),
+            0,
+            Mathf.FloorToInt((float)worldPos.z / chunkSize)
         );
 
-        if (chunks.ContainsKey(chunkCoords))
+        if (chunks.ContainsKey(chunkCoord))
         {
-            block.transform.parent = chunks[chunkCoords].transform;
+            block.transform.parent = chunks[chunkCoord].transform;
+        }
+        else
+        {
+            // Güvenlik: chunk yoksa world altında kalsın
+            block.transform.parent = transform;
         }
     }
 }
