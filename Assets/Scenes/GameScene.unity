@@ -1433,6 +1433,8 @@ MonoBehaviour:
   blockIcons:
   - {fileID: 21300000, guid: dec4ee13af7c0144bb3152ea22f4b8c7, type: 3}
   - {fileID: 21300000, guid: bffe84f6ce8c6344b97490b338811335, type: 3}
+  - {fileID: 21300000, guid: e4a7843bf1f6f7f489ad44f819c7c5c9, type: 3}
+  - {fileID: 21300000, guid: aa625eba4e4cde940b1f2fe26a0cf526, type: 3}
   handBlocks:
   - {fileID: 8827212}
   - {fileID: 238346914}
@@ -1895,6 +1897,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grassPrefab: {fileID: 1183299095262134780, guid: 3d6ce6030052e14469533dee92d92573, type: 3}
   dirtPrefab: {fileID: 102092431646050029, guid: 381d43d27377cc84dbd8a41adba71670, type: 3}
+  stonePrefab: {fileID: 3119665523593768622, guid: a2eba69cfffce964cab81b6fd19d116f, type: 3}
+  cobblePrefab: {fileID: 3119665523593768622, guid: ebbb42829770e1b429c03c95258793ae, type: 3}
   player: {fileID: 2064128153}
   viewDistance: 2
   chunkSize: 8

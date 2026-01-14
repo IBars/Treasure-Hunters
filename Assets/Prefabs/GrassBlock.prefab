@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4358601497874229350}
   - component: {fileID: -2917304438452757307}
   - component: {fileID: 8604276982358623160}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GrassBlock
   m_TagString: GrassBlock
   m_Icon: {fileID: 0}
@@ -82,7 +82,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockID: 0
-  health: 1
+  health: 1.5
 --- !u!1 &4637738488864310684
 GameObject:
   m_ObjectHideFlags: 0
@@ -95,7 +95,7 @@ GameObject:
   - component: {fileID: 5078764694938344994}
   - component: {fileID: 2987377241343667517}
   - component: {fileID: 7866277136273939369}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -203,7 +203,7 @@ GameObject:
   - component: {fileID: 7154363541909852886}
   - component: {fileID: 3884443518679662947}
   - component: {fileID: 1739695981643684343}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -311,7 +311,7 @@ GameObject:
   - component: {fileID: 5137379720038181590}
   - component: {fileID: 3683426376285353771}
   - component: {fileID: 1154631671040780015}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -419,7 +419,7 @@ GameObject:
   - component: {fileID: 3337242381017349992}
   - component: {fileID: 5760744845825852535}
   - component: {fileID: 5567265301388411188}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -527,7 +527,7 @@ GameObject:
   - component: {fileID: 1731825069745838610}
   - component: {fileID: 1477298072873799682}
   - component: {fileID: 8123109987411886321}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -635,7 +635,7 @@ GameObject:
   - component: {fileID: 4141087665116372926}
   - component: {fileID: 6455539421739240942}
   - component: {fileID: 5442495303856744645}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Top
   m_TagString: Untagged
   m_Icon: {fileID: 0}

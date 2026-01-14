@@ -6,10 +6,12 @@ public class ChunkWorldGenerator : MonoBehaviour
 {
     public GameObject grassPrefab;
     public GameObject dirtPrefab;
+    public GameObject stonePrefab; // Inspector'dan Stone ekle
+    public GameObject cobblePrefab; // Inspector'dan Cobblestone ekle
     public Transform player;
     
     [Header("Dünya Ayarları")]
-    public int viewDistance = 2; // Başlangıç için 2 idealdir
+    public int viewDistance = 2;
     public int chunkSize = 16;
     public float noiseScale = 0.1f;
     public int heightMultiplier = 10; 
@@ -51,19 +53,16 @@ public class ChunkWorldGenerator : MonoBehaviour
 
                     if (!chunks.ContainsKey(coords))
                     {
-                        // Chunk yoksa oluştur, bitene kadar bekle
                         yield return StartCoroutine(Create3DChunkCoroutine(coords));
                     }
                     else if (!chunks[coords].activeSelf)
                     {
-                        // Varsa ve kapalıysa aç
                         chunks[coords].SetActive(true);
                     }
                 }
             }
         }
 
-        // Uzaktakileri kapat
         List<Vector3Int> keys = new List<Vector3Int>(chunks.Keys);
         foreach (var key in keys)
         {
@@ -83,7 +82,7 @@ public class ChunkWorldGenerator : MonoBehaviour
         chunks.Add(coords, chunkParent);
 
         int blocksCreatedThisFrame = 0;
-        int blocksPerFrame = 500; // Oluşum hızı (Kasmaya başlarsa düşür, yavaşsa artır)
+        int blocksPerFrame = 500; 
 
         for (int x = 0; x < chunkSize; x++)
         {
@@ -97,11 +96,27 @@ public class ChunkWorldGenerator : MonoBehaviour
                 {
                     int worldY = coords.y * chunkSize + y;
 
-                    if (worldY <= surfaceY && worldY >= -5)
+                    if (worldY <= surfaceY && worldY >= -10)
                     {
                         Vector3 pos = new Vector3(worldX, worldY, worldZ);
-                        GameObject prefab = (worldY == surfaceY) ? grassPrefab : dirtPrefab;
-                        SpawnBlock(prefab, pos, chunkParent, (worldY == surfaceY) ? 0 : 1);
+                        GameObject prefab;
+                        int id;
+
+                        // DERİNLİK MANTIĞI
+                        if (worldY == surfaceY) {
+                            prefab = grassPrefab;
+                            id = 0;
+                        }
+                        else if (worldY > surfaceY - 3) {
+                            prefab = dirtPrefab;
+                            id = 1;
+                        }
+                        else {
+                            prefab = stonePrefab; 
+                            id = 2;
+                        }
+
+                        SpawnBlock(prefab, pos, chunkParent, id);
 
                         blocksCreatedThisFrame++;
                         if (blocksCreatedThisFrame >= blocksPerFrame)
@@ -117,13 +132,12 @@ public class ChunkWorldGenerator : MonoBehaviour
 
     void SpawnBlock(GameObject prefab, Vector3 pos, GameObject parent, int id)
     {
+        if (prefab == null) return;
         GameObject blockObj = Instantiate(prefab, pos, Quaternion.identity, parent.transform);
         
-        // Renderer kontrolü (Hata vermemesi için)
         Renderer blockRenderer = blockObj.GetComponentInChildren<Renderer>();
         if (blockRenderer != null)
         {
-            // Uzaktaki blokların gölgesini kapat
             if (Vector3.Distance(player.position, pos) > chunkSize * 1.5f) 
             {
                 blockRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

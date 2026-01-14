@@ -10,7 +10,7 @@ public class PlayerInteraction : MonoBehaviour
 
     [Header("Envanter Verileri")]
     public int[] inventoryCounts = new int[10];
-    public int[] slotBlockIDs = new int[10]; // -1: Boş, 0: Grass, 1: Dirt
+    public int[] slotBlockIDs = new int[10]; 
 
     [Header("UI Elemanları")]
     public Image[] slotIcons;
@@ -18,9 +18,9 @@ public class PlayerInteraction : MonoBehaviour
     public Sprite[] blockIcons; 
 
     [Header("Elde Tutma ve Seçim")]
-    public GameObject[] handBlocks; // Eldeki 3D modeller
+    public GameObject[] handBlocks; 
     public int selectedSlot = 0;
-    public float breakSpeed = 2.0f; // Blok kırma hızı (Yüksek sayı = Daha hızlı)
+    public float breakSpeed = 2.0f; 
 
     void Start()
     {
@@ -61,7 +61,6 @@ public class PlayerInteraction : MonoBehaviour
 
     void HandleMining()
     {
-        // GetMouseButton(0) - Basılı tutulduğu sürece çalışır
         if (Input.GetMouseButton(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
@@ -70,12 +69,12 @@ public class PlayerInteraction : MonoBehaviour
                 Block b = hit.collider.GetComponent<Block>();
                 if (b != null)
                 {
-                    // Bloğa zamanla hasar ver
                     b.health -= Time.deltaTime * breakSpeed;
 
                     if (b.health <= 0)
                     {
-                        AddToInventory(b.blockID);
+                        int dropID = (b.blockID == 2) ? 3 : b.blockID;
+                        AddToInventory(dropID);
                         worldGenerator.RemoveBlockManually(hit.collider.gameObject);
                     }
                 }
@@ -85,7 +84,7 @@ public class PlayerInteraction : MonoBehaviour
 
     void HandleBuilding()
     {
-        if (Input.GetMouseButtonDown(1)) // Sağ Tık: Koyma
+        if (Input.GetMouseButtonDown(1)) 
         {
             if (inventoryCounts[selectedSlot] > 0 && slotBlockIDs[selectedSlot] != -1)
             {
@@ -93,14 +92,22 @@ public class PlayerInteraction : MonoBehaviour
                 if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
                 {
                     Vector3 spawnPos = hit.transform.position + hit.normal;
-                    GameObject prefab = (slotBlockIDs[selectedSlot] == 0) ? worldGenerator.grassPrefab : worldGenerator.dirtPrefab;
+                    GameObject prefab = null;
+                    int currentID = slotBlockIDs[selectedSlot];
+
+                    if (currentID == 0) prefab = worldGenerator.grassPrefab;
+                    else if (currentID == 1) prefab = worldGenerator.dirtPrefab;
+                    else if (currentID == 2) prefab = worldGenerator.stonePrefab;
+                    else if (currentID == 3) prefab = worldGenerator.cobblePrefab;
                     
-                    GameObject newBlock = Instantiate(prefab, spawnPos, Quaternion.identity);
-                    worldGenerator.RegisterNewBlock(newBlock, Vector3Int.RoundToInt(spawnPos));
-                    
-                    inventoryCounts[selectedSlot]--;
-                    UpdateUI();
-                    UpdateSelectionUI(); 
+                    if(prefab != null)
+                    {
+                        GameObject newBlock = Instantiate(prefab, spawnPos, Quaternion.identity);
+                        worldGenerator.RegisterNewBlock(newBlock, Vector3Int.RoundToInt(spawnPos));
+                        inventoryCounts[selectedSlot]--;
+                        UpdateUI();
+                        UpdateSelectionUI(); 
+                    }
                 }
             }
         }
@@ -134,17 +141,25 @@ public class PlayerInteraction : MonoBehaviour
     {
         for (int i = 0; i < 10; i++)
         {
-            if (inventoryCounts[i] > 0)
+            if (inventoryCounts[i] > 0 && slotBlockIDs[i] != -1)
             {
+                // İkonu aktif et ve görünür yap
+                slotIcons[i].gameObject.SetActive(true);
                 slotIcons[i].enabled = true;
-                slotIcons[i].sprite = blockIcons[slotBlockIDs[i]];
+                slotIcons[i].color = Color.white; // Şeffaflığı sıfırla
+
+                if(slotBlockIDs[i] >= 0 && slotBlockIDs[i] < blockIcons.Length)
+                {
+                    slotIcons[i].sprite = blockIcons[slotBlockIDs[i]];
+                }
+                
                 slotTexts[i].text = inventoryCounts[i].ToString();
             }
             else
             {
+                // Slot boşsa gizle
                 slotIcons[i].enabled = false;
                 slotTexts[i].text = "";
-                // Eğer miktar 0 ise ID'yi sıfırla ki slot boşalsın
                 if(inventoryCounts[i] <= 0) slotBlockIDs[i] = -1;
             }
         }
@@ -152,17 +167,13 @@ public class PlayerInteraction : MonoBehaviour
 
     void UpdateSelectionUI()
     {
-        // 1. Renk Değişimi (Seçili koyu gri, diğerleri açık gri)
         for (int i = 0; i < slotIcons.Length; i++)
         {
             Image slotBg = slotIcons[i].transform.parent.GetComponent<Image>();
-            if (i == selectedSlot)
-                slotBg.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Koyu Gri
-            else
-                slotBg.color = new Color(0.7f, 0.7f, 0.7f, 1f); // Açık Gri
+            if (slotBg != null)
+                slotBg.color = (i == selectedSlot) ? new Color(0.3f, 0.3f, 0.3f, 1f) : new Color(0.7f, 0.7f, 0.7f, 1f);
         }
 
-        // 2. Eldeki 3D Model Kontrolü
         for (int i = 0; i < handBlocks.Length; i++)
         {
             if (handBlocks[i] != null)
