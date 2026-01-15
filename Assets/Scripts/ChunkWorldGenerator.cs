@@ -100,14 +100,32 @@ public class ChunkWorldGenerator : MonoBehaviour
                 {
                     GameObject prefab;
                     int id;
+                    // Varsayılan rotasyon
+                    Quaternion rotation = Quaternion.identity;
 
-                    if (y == surfaceY) { prefab = grassPrefab; id = 0; }
-                    else if (y >= surfaceY - 5) { prefab = dirtPrefab; id = 1; }
-                    else { prefab = stonePrefab; id = 2; }
+                    if (y == surfaceY) 
+                    { 
+                        prefab = grassPrefab; 
+                        id = 0; 
+                        // SADECE grassblock için X ekseninde -90 derece rotasyon
+                        rotation = Quaternion.Euler(-90f, 0f, 0f); 
+                    }
+                    else if (y >= surfaceY - 5) 
+                    { 
+                        prefab = dirtPrefab; 
+                        id = 1; 
+                    }
+                    else 
+                    { 
+                        prefab = stonePrefab; 
+                        id = 2; 
+                    }
 
                     Vector3Int pos = new Vector3Int(worldX, y, worldZ);
 
-                    GameObject blockObj = Instantiate(prefab, pos, Quaternion.identity, chunkObj.transform);
+                    // Belirlenen rotasyon ile oluşturma yapılıyor
+                    GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
+                    
                     Block block = blockObj.GetComponent<Block>();
                     block.blockID = id;
 

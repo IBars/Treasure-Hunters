@@ -102,16 +102,24 @@ public class PlayerInteraction : MonoBehaviour
         {
             Vector3 spawnPos = hit.transform.position + hit.normal;
             GameObject prefab = null;
+            // Varsayılan rotasyon (Düz)
+            Quaternion spawnRotation = Quaternion.identity;
 
             int id = slotBlockIDs[selectedSlot];
-            if (id == 0) prefab = worldGenerator.grassPrefab;
+            if (id == 0) 
+            { 
+                prefab = worldGenerator.grassPrefab;
+                // Çim bloğu için özel rotasyon
+                spawnRotation = Quaternion.Euler(-90f, 0f, 0f);
+            }
             else if (id == 1) prefab = worldGenerator.dirtPrefab;
             else if (id == 2) prefab = worldGenerator.stonePrefab;
             else if (id == 3) prefab = worldGenerator.cobblePrefab;
 
             if (prefab != null)
             {
-                GameObject newBlock = Instantiate(prefab, spawnPos, Quaternion.identity);
+                // Quaternion.identity yerine spawnRotation kullanıldı
+                GameObject newBlock = Instantiate(prefab, spawnPos, spawnRotation);
                 worldGenerator.RegisterNewBlock(newBlock, Vector3Int.RoundToInt(spawnPos));
                 inventoryCounts[selectedSlot]--;
                 UpdateUI();
