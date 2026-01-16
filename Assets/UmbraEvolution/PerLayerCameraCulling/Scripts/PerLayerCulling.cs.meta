@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 3b28c29541c3aae4ea0f96b8eb247f82
+timeCreated: 1429427954
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35100
+  packageName: Per-Layer Camera Culling
+  packageVersion: 3.3.2
+  assetPath: Assets/UmbraEvolution/PerLayerCameraCulling/Scripts/PerLayerCulling.cs
+  uploadId: 822228

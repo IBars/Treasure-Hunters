@@ -1,4 +1,8 @@
 ﻿<Solution>
+  <Project Path="UmbraEvolution.PerLayerCameraCulling.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="UmbraEvolution.Editor.csproj" />
+  <Project Path="UmbraEvolution.csproj" />
+  <Project Path="UmbraEvolution.PerLayerCameraCulling.Editor.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
 </Solution>

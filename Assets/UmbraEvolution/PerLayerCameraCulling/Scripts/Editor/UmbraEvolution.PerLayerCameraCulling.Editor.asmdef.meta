@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bd3d599b8efcc884c959e0490737412d
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35100
+  packageName: Per-Layer Camera Culling
+  packageVersion: 3.3.2
+  assetPath: Assets/UmbraEvolution/PerLayerCameraCulling/Scripts/Editor/UmbraEvolution.PerLayerCameraCulling.Editor.asmdef
+  uploadId: 822228
