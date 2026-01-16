@@ -76,71 +76,73 @@ public class ChunkWorldGenerator : MonoBehaviour
     }
 
     IEnumerator CreateChunk(Vector3Int coord)
+{
+    GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
+    chunkObj.transform.parent = transform;
+
+    Chunk chunk = new Chunk(coord, chunkObj);
+    chunks.Add(coord, chunk);
+
+    int counter = 0;
+    int blocksPerFrame = 2000; // İstediğin gibi 2000 olarak ayarlandı
+
+    for (int x = 0; x < chunkSize; x++)
     {
-        GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
-        chunkObj.transform.parent = transform;
-
-        Chunk chunk = new Chunk(coord, chunkObj);
-        chunks.Add(coord, chunk);
-
-        int counter = 0;
-        int blocksPerFrame = 300;
-
-        for (int x = 0; x < chunkSize; x++)
+        for (int z = 0; z < chunkSize; z++)
         {
-            for (int z = 0; z < chunkSize; z++)
+            int worldX = coord.x * chunkSize + x;
+            int worldZ = coord.z * chunkSize + z;
+
+            float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
+            int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
+
+            // surfaceY'den başlayıp 7 blok aşağıya kadar (surfaceY - 6) döngü kuruyoruz
+            for (int y = surfaceY; y > surfaceY - 7; y--)
             {
-                int worldX = coord.x * chunkSize + x;
-                int worldZ = coord.z * chunkSize + z;
+                GameObject prefab;
+                int id;
+                Quaternion rotation = Quaternion.identity;
 
-                float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
-                int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
-
-                for (int y = surfaceY; y >= surfaceY - 25; y--)
+                // 1 KATMAN GRASS (En üst)
+                if (y == surfaceY)
                 {
-                    GameObject prefab;
-                    int id;
-                    // Varsayılan rotasyon
-                    Quaternion rotation = Quaternion.identity;
+                    prefab = grassPrefab;
+                    id = 0;
+                    rotation = Quaternion.Euler(-90f, 0f, 0f);
+                }
+                // 2 KATMAN DIRT (Yüzeyin altındaki ilk 2 blok)
+                else if (y > surfaceY - 3) 
+                {
+                    prefab = dirtPrefab;
+                    id = 1;
+                }
+                // 4 KATMAN STONE (Geri kalan 4 blok)
+                else
+                {
+                    prefab = stonePrefab;
+                    id = 2;
+                }
 
-                    if (y == surfaceY) 
-                    { 
-                        prefab = grassPrefab; 
-                        id = 0; 
-                        // SADECE grassblock için X ekseninde -90 derece rotasyon
-                        rotation = Quaternion.Euler(-90f, 0f, 0f); 
-                    }
-                    else if (y >= surfaceY - 5) 
-                    { 
-                        prefab = dirtPrefab; 
-                        id = 1; 
-                    }
-                    else 
-                    { 
-                        prefab = stonePrefab; 
-                        id = 2; 
-                    }
+                Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
+                
+                Block block = blockObj.GetComponent<Block>();
+                block.blockID = id;
+                chunk.blocks[pos] = block;
 
-                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                // Optimizasyon: Görünürlüğü hemen kontrol et (Eğer komşular varsa)
+                block.CheckVisibility(this);
 
-                    // Belirlenen rotasyon ile oluşturma yapılıyor
-                    GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
-                    
-                    Block block = blockObj.GetComponent<Block>();
-                    block.blockID = id;
-
-                    chunk.blocks[pos] = block;
-
-                    counter++;
-                    if (counter >= blocksPerFrame)
-                    {
-                        counter = 0;
-                        yield return null;
-                    }
+                counter++;
+                if (counter >= blocksPerFrame)
+                {
+                    counter = 0;
+                    yield return null;
                 }
             }
         }
     }
+}
 
     // =====================
     // DATA & VISIBILITY

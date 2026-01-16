@@ -88,45 +88,55 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     void HandleBuilding()
+{
+    if (!Input.GetMouseButtonDown(1)) return;
+
+    if (inventoryCounts[selectedSlot] <= 0 || slotBlockIDs[selectedSlot] == -1)
+        return;
+
+    Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
+
+    if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
     {
-        if (!Input.GetMouseButtonDown(1)) return;
+        Vector3 spawnPos = hit.transform.position + hit.normal;
+        Vector3Int gridPos = Vector3Int.RoundToInt(spawnPos);
 
-        if (inventoryCounts[selectedSlot] <= 0 || slotBlockIDs[selectedSlot] == -1)
-            return;
-
-        Ray ray = Camera.main.ScreenPointToRay(
-            new Vector3(Screen.width / 2, Screen.height / 2)
-        );
-
-        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
+        // --- BUG ÇÖZÜMÜ: ÇAKIŞMA KONTROLÜ ---
+        // Oyuncunun pozisyonunu al (genellikle ayak ucundadır)
+        // Bloğun yerleşeceği yer ile oyuncu arasındaki mesafeyi kontrol et
+        float distToPlayer = Vector3.Distance(spawnPos, player.position);
+        
+        // Eğer mesafe 0.8 birimden kısaysa (bloğun içine denk geliyorsa) koyma
+        // (Oyuncu boyuna göre bu değeri 1.0f veya 0.5f yapabilirsin)
+        if (distToPlayer < 0.8f) 
         {
-            Vector3 spawnPos = hit.transform.position + hit.normal;
-            GameObject prefab = null;
-            // Varsayılan rotasyon (Düz)
-            Quaternion spawnRotation = Quaternion.identity;
+            Debug.Log("Karakterin içine blok koyamazsın!");
+            return; 
+        }
+        // ------------------------------------
 
-            int id = slotBlockIDs[selectedSlot];
-            if (id == 0) 
-            { 
-                prefab = worldGenerator.grassPrefab;
-                // Çim bloğu için özel rotasyon
-                spawnRotation = Quaternion.Euler(-90f, 0f, 0f);
-            }
-            else if (id == 1) prefab = worldGenerator.dirtPrefab;
-            else if (id == 2) prefab = worldGenerator.stonePrefab;
-            else if (id == 3) prefab = worldGenerator.cobblePrefab;
+        GameObject prefab = null;
+        Quaternion spawnRotation = Quaternion.identity;
 
-            if (prefab != null)
-            {
-                // Quaternion.identity yerine spawnRotation kullanıldı
-                GameObject newBlock = Instantiate(prefab, spawnPos, spawnRotation);
-                worldGenerator.RegisterNewBlock(newBlock, Vector3Int.RoundToInt(spawnPos));
-                inventoryCounts[selectedSlot]--;
-                UpdateUI();
-                UpdateSelectionUI();
-            }
+        int id = slotBlockIDs[selectedSlot];
+        if (id == 0) { 
+            prefab = worldGenerator.grassPrefab; 
+            spawnRotation = Quaternion.Euler(-90f, 0f, 0f); 
+        }
+        else if (id == 1) prefab = worldGenerator.dirtPrefab;
+        else if (id == 2) prefab = worldGenerator.stonePrefab;
+        else if (id == 3) prefab = worldGenerator.cobblePrefab;
+
+        if (prefab != null)
+        {
+            GameObject newBlock = Instantiate(prefab, (Vector3)gridPos, spawnRotation);
+            worldGenerator.RegisterNewBlock(newBlock, gridPos);
+            inventoryCounts[selectedSlot]--;
+            UpdateUI();
+            UpdateSelectionUI();
         }
     }
+}
 
     void HandleHighlight()
     {
