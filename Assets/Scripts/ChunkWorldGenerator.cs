@@ -23,8 +23,8 @@ public class ChunkWorldGenerator : MonoBehaviour
     public GameObject stonePrefab;
 
     public GameObject cobblePrefab;
-
-
+    public GameObject logPrefab; 
+    public GameObject leafPrefab; 
 
     public Transform player;
 
@@ -41,6 +41,11 @@ public class ChunkWorldGenerator : MonoBehaviour
     public int heightMultiplier = 15;
 
     public int baseHeight = 20;
+
+
+    [Header("Tree Settings")]
+    [Range(0, 100)]
+    public float treeChance = 2f; // EKLE: %2 ağaç çıkma şansı
 
 
 
@@ -151,105 +156,71 @@ public class ChunkWorldGenerator : MonoBehaviour
 
 
     IEnumerator CreateChunk(Vector3Int coord)
-
 {
-
     GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
-
     chunkObj.transform.parent = transform;
-
     Chunk chunk = new Chunk(coord, chunkObj);
-
     chunks.Add(coord, chunk);
 
-
-
     for (int x = 0; x < chunkSize; x++)
-
     {
-
         for (int z = 0; z < chunkSize; z++)
-
         {
-
             int worldX = coord.x * chunkSize + x;
-
             int worldZ = coord.z * chunkSize + z;
-
             float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
-
             int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
 
-
-
+            // En üstten aşağıya doğru blokları yerleştiriyoruz
             for (int y = surfaceY; y > surfaceY - 7; y--)
-
             {
-
                 GameObject prefab;
-
                 int id;
-
                 Quaternion rotation = Quaternion.identity;
 
+                // Blok tipini belirle
+                if (y == surfaceY) 
+                { 
+                    prefab = grassPrefab; 
+                    id = 0; 
+                    rotation = Quaternion.Euler(-90f, 0f, 0f); 
 
+                    // AĞAÇ OLUŞTURMA: Sadece en üst blok çimense ve şans yaver giderse
+                    if (Random.Range(0f, 100f) < treeChance)
+                    {
+                        GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
+                    }
+                }
+                else if (y > surfaceY - 3) 
+                { 
+                    prefab = dirtPrefab; 
+                    id = 1; 
+                }
+                else 
+                { 
+                    prefab = stonePrefab; 
+                    id = 2; 
+                }
 
-                if (y == surfaceY) { prefab = grassPrefab; id = 0; rotation = Quaternion.Euler(-90f, 0f, 0f); }
-
-                else if (y > surfaceY - 3) { prefab = dirtPrefab; id = 1; }
-
-                else { prefab = stonePrefab; id = 2; }
-
-
-
+                // Bloğu dünyaya yerleştir
                 Vector3Int pos = new Vector3Int(worldX, y, worldZ);
-
-                GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
-
-               
-
-                // --- KRİTİK EKLEME: Hiyerarşiyi temizle ve durdurma hızını artır ---
-
-                blockObj.hideFlags = HideFlags.HideInHierarchy;
-
-                // -----------------------------------------------------------------
-
-
-
-                Block block = blockObj.GetComponent<Block>();
-
-                block.blockID = id;
-
-                chunk.blocks[pos] = block;
-
+                PlaceBlock(prefab, pos, id, rotation, chunkObj.transform, chunk);
             }
-
         }
 
-
-
-        // HIZ AYARI: columnsPerFrame değerine göre bekleme yap
-
+        // Performans ayarı: Belirli sütun sayısında bir kare bekle
         if (x % columnsPerFrame == 0 && x != 0)
-
             yield return null;
-
     }
 
-
-
-    // Face Culling Uygula
-
+    // Görünürlük kontrolü (Face Culling simülasyonu)
     foreach (var b in chunk.blocks.Values) b.CheckVisibility(this);
-
+    
+    // Kenar chunk'ları güncelle
     UpdateBorderChunks(coord);
-
-   
-
-    // Batching işlemi
-
+    
+    // Performans için objeleri birleştir
     StaticBatchingUtility.Combine(chunkObj);
-
 }
 
 
@@ -363,5 +334,48 @@ public class ChunkWorldGenerator : MonoBehaviour
 
 
     Vector3Int GetChunkCoord(Vector3Int pos) => new Vector3Int(Mathf.FloorToInt((float)pos.x / chunkSize), 0, Mathf.FloorToInt((float)pos.z / chunkSize));
+
+    void PlaceBlock(GameObject prefab, Vector3Int pos, int id, Quaternion rot, Transform parent, Chunk chunk)
+{
+    if (chunk.blocks.ContainsKey(pos)) return; // Orada zaten blok varsa koyma
+
+    GameObject blockObj = Instantiate(prefab, (Vector3)pos, rot, parent);
+    blockObj.hideFlags = HideFlags.HideInHierarchy;
+    
+    Block block = blockObj.GetComponent<Block>();
+    block.blockID = id;
+    chunk.blocks[pos] = block;
+}
+
+void GenerateTree(Vector3Int pos, Transform parent, Chunk chunk)
+{
+    int height = Random.Range(4, 7); // 4-6 blok yüksekliğinde
+
+    // Gövde (Odunlar)
+    for (int i = 0; i < height; i++)
+    {
+        PlaceBlock(logPrefab, pos + Vector3Int.up * i, 4, Quaternion.identity, parent, chunk);
+    }
+
+    // Yapraklar
+    Vector3Int leafCenter = pos + Vector3Int.up * height;
+    for (int x = -2; x <= 2; x++)
+    {
+        for (int y = -1; y <= 2; y++)
+        {
+            for (int z = -2; z <= 2; z++)
+            {
+                Vector3Int lPos = leafCenter + new Vector3Int(x, y, z);
+                // Küresel yaprak yapısı için mesafe kontrolü
+                if (Vector3.Distance(leafCenter, lPos) < 2.8f)
+                {
+                    PlaceBlock(leafPrefab, lPos, 5, Quaternion.identity, parent, chunk);
+                }
+            }
+        }
+    }
+}
+
+
 
 }
