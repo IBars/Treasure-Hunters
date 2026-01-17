@@ -1357,183 +1357,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4459864851310106429, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
   m_PrefabInstance: {fileID: 1195211605}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &347622353
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 347622341}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b28c29541c3aae4ea0f96b8eb247f82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UmbraEvolution.PerLayerCameraCulling::UmbraEvolution.PerLayerCameraCulling.PerLayerCulling
-  DefaultCullDistance: 1000
-  DistanceMultiplier: 1
-  UseSphericalCulling: 0
-  AlwaysShowGizmos: 0
-  LayerCullInfoArray:
-  - LayerName: Default
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: TransparentFX
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Ignore Raycast
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Block
-    UseDefaultCullDistance: 0
-    CullDistance: 160
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Water
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: UI
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
-  - LayerName: Layer Not Defined
-    UseDefaultCullDistance: 1
-    CullDistance: 1000
-    ShowGizmo: 0
-    GizmoColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &358164568
 GameObject:
   m_ObjectHideFlags: 0
@@ -1997,11 +1820,12 @@ MonoBehaviour:
   stonePrefab: {fileID: 3119665523593768622, guid: a2eba69cfffce964cab81b6fd19d116f, type: 3}
   cobblePrefab: {fileID: 3119665523593768622, guid: ebbb42829770e1b429c03c95258793ae, type: 3}
   player: {fileID: 2064128153}
-  chunkSize: 8
-  viewDistance: 4
+  chunkSize: 16
+  viewDistance: 3
   noiseScale: 0.02
   heightMultiplier: 10
   baseHeight: 20
+  columnsPerFrame: 4
 --- !u!1 &781223370
 GameObject:
   m_ObjectHideFlags: 0
@@ -2655,9 +2479,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4459864851310106424, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
       insertIndex: 1
-      addedObject: {fileID: 347622353}
-    - targetCorrespondingSourceObject: {fileID: 4459864851310106424, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
-      insertIndex: 2
       addedObject: {fileID: 347622349}
     - targetCorrespondingSourceObject: {fileID: 4459864851310106424, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
       insertIndex: -1
@@ -4153,7 +3974,6 @@ GameObject:
   - component: {fileID: 7579885930953452900}
   - component: {fileID: 8110988747516637366}
   - component: {fileID: 2636441398802948238}
-  - component: {fileID: 2521509373257824333}
   - component: {fileID: 3079801512049233061}
   m_Layer: 3
   m_Name: DirtBlock
@@ -4174,7 +3994,6 @@ GameObject:
   - component: {fileID: 1186348153615231993}
   - component: {fileID: 8199895941934810588}
   - component: {fileID: 76987007314280346}
-  - component: {fileID: 4173002056474502006}
   m_Layer: 3
   m_Name: CobblestoneBlock
   m_TagString: Untagged
@@ -4207,7 +4026,6 @@ GameObject:
   - component: {fileID: 7303893246783354165}
   - component: {fileID: 2443667474259017858}
   - component: {fileID: 9069493241257338957}
-  - component: {fileID: 8804103367244540114}
   m_Layer: 0
   m_Name: GrassBlock
   m_TagString: Untagged
@@ -4223,27 +4041,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2434437697887201475}
   m_Mesh: {fileID: -5495902117074765545, guid: f8a71662dfb466847adae9abe18e113f, type: 3}
---- !u!65 &2521509373257824333
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102092431720751168}
-  m_Material: {fileID: 13400000, guid: 7c421096f5d258c47999d3403f99a0b4, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &2636441398802948238
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4325,32 +4122,11 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.043619405, y: 0, z: 0, w: 0.9990483}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 506344150}
   m_LocalEulerAnglesHint: {x: 5, y: 0, z: 0}
---- !u!65 &4173002056474502006
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 322270176675108835}
-  m_Material: {fileID: 13400000, guid: 7c421096f5d258c47999d3403f99a0b4, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6481486263995226917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4426,7 +4202,6 @@ GameObject:
   - component: {fileID: 6481486263995226917}
   - component: {fileID: 3042171045890064625}
   - component: {fileID: 6552056717339343543}
-  - component: {fileID: 7067674875687839323}
   m_Layer: 3
   m_Name: StoneBlock
   m_TagString: Untagged
@@ -4434,27 +4209,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!65 &7067674875687839323
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6882899479899181774}
-  m_Material: {fileID: 13400000, guid: 7c421096f5d258c47999d3403f99a0b4, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!4 &7303893246783354165
 Transform:
   m_ObjectHideFlags: 0
@@ -4465,7 +4219,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.67559016, y: 0, z: 0, w: 0.7372774}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 50, y: 50, z: 50}
+  m_LocalScale: {x: 25, y: 25, z: 25}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 506344150}
@@ -4480,8 +4234,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.043619405, y: -0, z: -0, w: 0.9990483}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.49999994, z: 0.5}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.24999997, z: 0.24999997}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 506344150}
   m_LocalEulerAnglesHint: {x: 5, y: 0, z: 0}
@@ -4495,8 +4249,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.043619405, y: 0, z: 0, w: 0.9990483}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 506344150}
   m_LocalEulerAnglesHint: {x: 5, y: 0, z: 0}
@@ -4516,27 +4270,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 322270176675108835}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!65 &8804103367244540114
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2434437697887201475}
-  m_Material: {fileID: 13400000, guid: 7c421096f5d258c47999d3403f99a0b4, type: 2}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.019999998, y: 0.020000003, z: 0.020000003}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &9069493241257338957
 MeshRenderer:
   m_ObjectHideFlags: 0
