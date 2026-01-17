@@ -10,7 +10,7 @@ public class ChunkWorldGenerator : MonoBehaviour
     public GameObject grassPrefab;
     public GameObject dirtPrefab;
     public GameObject stonePrefab;
-    public GameObject cobblePrefab;
+    public GameObject cobblePrefab; // Hata veren eksik değişken eklendi
 
     public Transform player;
 
@@ -25,10 +25,7 @@ public class ChunkWorldGenerator : MonoBehaviour
     private Vector3Int lastPlayerChunk = new Vector3Int(999, 0, 999);
     private bool generating = false;
 
-    void Awake()
-    {
-        Instance = this;
-    }
+    void Awake() => Instance = this;
 
     void Update()
     {
@@ -67,159 +64,107 @@ public class ChunkWorldGenerator : MonoBehaviour
         }
 
         foreach (var pair in chunks)
-        {
             if (!needed.Contains(pair.Key))
                 pair.Value.root.SetActive(false);
-        }
 
         generating = false;
     }
 
     IEnumerator CreateChunk(Vector3Int coord)
-{
-    GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
-    chunkObj.transform.parent = transform;
-
-    Chunk chunk = new Chunk(coord, chunkObj);
-    chunks.Add(coord, chunk);
-
-    int counter = 0;
-    int blocksPerFrame = 2000; // İstediğin gibi 2000 olarak ayarlandı
-
-    for (int x = 0; x < chunkSize; x++)
     {
-        for (int z = 0; z < chunkSize; z++)
+        GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
+        chunkObj.transform.parent = transform;
+        Chunk chunk = new Chunk(coord, chunkObj);
+        chunks.Add(coord, chunk);
+
+        for (int x = 0; x < chunkSize; x++)
         {
-            int worldX = coord.x * chunkSize + x;
-            int worldZ = coord.z * chunkSize + z;
-
-            float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
-            int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
-
-            // surfaceY'den başlayıp 7 blok aşağıya kadar (surfaceY - 6) döngü kuruyoruz
-            for (int y = surfaceY; y > surfaceY - 7; y--)
+            for (int z = 0; z < chunkSize; z++)
             {
-                GameObject prefab;
-                int id;
-                Quaternion rotation = Quaternion.identity;
+                int worldX = coord.x * chunkSize + x;
+                int worldZ = coord.z * chunkSize + z;
+                float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
+                int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
 
-                // 1 KATMAN GRASS (En üst)
-                if (y == surfaceY)
+                for (int y = surfaceY; y > surfaceY - 7; y--)
                 {
-                    prefab = grassPrefab;
-                    id = 0;
-                    rotation = Quaternion.Euler(-90f, 0f, 0f);
-                }
-                // 2 KATMAN DIRT (Yüzeyin altındaki ilk 2 blok)
-                else if (y > surfaceY - 3) 
-                {
-                    prefab = dirtPrefab;
-                    id = 1;
-                }
-                // 4 KATMAN STONE (Geri kalan 4 blok)
-                else
-                {
-                    prefab = stonePrefab;
-                    id = 2;
-                }
+                    GameObject prefab;
+                    int id;
+                    Quaternion rotation = Quaternion.identity;
 
-                Vector3Int pos = new Vector3Int(worldX, y, worldZ);
-                GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
-                
-                Block block = blockObj.GetComponent<Block>();
-                block.blockID = id;
-                chunk.blocks[pos] = block;
+                    if (y == surfaceY) { prefab = grassPrefab; id = 0; rotation = Quaternion.Euler(-90f, 0f, 0f); }
+                    else if (y > surfaceY - 3) { prefab = dirtPrefab; id = 1; }
+                    else { prefab = stonePrefab; id = 2; }
 
-                // Optimizasyon: Görünürlüğü hemen kontrol et (Eğer komşular varsa)
-                block.CheckVisibility(this);
-
-                counter++;
-                if (counter >= blocksPerFrame)
-                {
-                    counter = 0;
-                    yield return null;
+                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                    GameObject blockObj = Instantiate(prefab, pos, rotation, chunkObj.transform);
+                    
+                    Block block = blockObj.GetComponent<Block>();
+                    block.blockID = id;
+                    chunk.blocks[pos] = block;
                 }
             }
+            yield return null; 
         }
-    }
-}
 
-    // =====================
-    // DATA & VISIBILITY
-    // =====================
+        // Face Culling Uygula
+        foreach (var b in chunk.blocks.Values) b.CheckVisibility(this);
+        UpdateBorderChunks(coord); 
+        StaticBatchingUtility.Combine(chunkObj);
+    }
 
     public bool HasBlock(Vector3Int worldPos)
     {
-        Vector3Int chunkCoord = new Vector3Int(
-            Mathf.FloorToInt((float)worldPos.x / chunkSize),
-            0,
-            Mathf.FloorToInt((float)worldPos.z / chunkSize)
-        );
-
-        if (!chunks.ContainsKey(chunkCoord)) return false;
-        return chunks[chunkCoord].blocks.ContainsKey(worldPos);
+        Vector3Int cc = GetChunkCoord(worldPos);
+        return chunks.ContainsKey(cc) && chunks[cc].blocks.ContainsKey(worldPos);
     }
 
     public void RemoveBlockManually(GameObject blockObj)
     {
         Vector3Int pos = Vector3Int.RoundToInt(blockObj.transform.position);
-
-        Vector3Int chunkCoord = new Vector3Int(
-            Mathf.FloorToInt((float)pos.x / chunkSize),
-            0,
-            Mathf.FloorToInt((float)pos.z / chunkSize)
-        );
-
-        if (chunks.ContainsKey(chunkCoord))
-            chunks[chunkCoord].blocks.Remove(pos);
-
+        Vector3Int cc = GetChunkCoord(pos);
+        if (chunks.ContainsKey(cc)) chunks[cc].blocks.Remove(pos);
+        
         Destroy(blockObj);
-        CheckNeighbors(pos);
+        UpdateNeighbors(pos);
     }
 
     public void RegisterNewBlock(GameObject blockObj, Vector3Int worldPos)
     {
-        Vector3Int chunkCoord = new Vector3Int(
-            Mathf.FloorToInt((float)worldPos.x / chunkSize),
-            0,
-            Mathf.FloorToInt((float)worldPos.z / chunkSize)
-        );
-
-        if (chunks.ContainsKey(chunkCoord))
+        Vector3Int cc = GetChunkCoord(worldPos);
+        if (chunks.ContainsKey(cc))
         {
-            blockObj.transform.parent = chunks[chunkCoord].root.transform;
+            blockObj.transform.parent = chunks[cc].root.transform;
             Block b = blockObj.GetComponent<Block>();
-            chunks[chunkCoord].blocks[worldPos] = b;
-
+            chunks[cc].blocks[worldPos] = b;
+            
             b.CheckVisibility(this);
-            CheckNeighbors(worldPos);
+            UpdateNeighbors(worldPos);
         }
     }
 
-    void CheckNeighbors(Vector3Int pos)
+    void UpdateNeighbors(Vector3Int pos)
     {
-        Vector3Int[] dirs =
-        {
-            Vector3Int.up, Vector3Int.down,
-            Vector3Int.left, Vector3Int.right,
-            new Vector3Int(0,0,1), new Vector3Int(0,0,-1)
-        };
-
+        Vector3Int[] dirs = { Vector3Int.up, Vector3Int.down, Vector3Int.left, Vector3Int.right, Vector3Int.forward, Vector3Int.back };
         foreach (var d in dirs)
         {
             Vector3Int nPos = pos + d;
-
-            Vector3Int chunkCoord = new Vector3Int(
-                Mathf.FloorToInt((float)nPos.x / chunkSize),
-                0,
-                Mathf.FloorToInt((float)nPos.z / chunkSize)
-            );
-
-            if (chunks.ContainsKey(chunkCoord) &&
-                chunks[chunkCoord].blocks.TryGetValue(nPos, out Block b))
-            {
+            Vector3Int cc = GetChunkCoord(nPos);
+            if (chunks.ContainsKey(cc) && chunks[cc].blocks.TryGetValue(nPos, out Block b))
                 b.CheckVisibility(this);
-            }
         }
     }
+
+    void UpdateBorderChunks(Vector3Int coord)
+    {
+        Vector3Int[] neighbors = { Vector3Int.left, Vector3Int.right, Vector3Int.forward, Vector3Int.back };
+        foreach (var n in neighbors)
+        {
+            Vector3Int nCoord = coord + n;
+            if (chunks.ContainsKey(nCoord))
+                foreach (var b in chunks[nCoord].blocks.Values) b.CheckVisibility(this);
+        }
+    }
+
+    Vector3Int GetChunkCoord(Vector3Int pos) => new Vector3Int(Mathf.FloorToInt((float)pos.x / chunkSize), 0, Mathf.FloorToInt((float)pos.z / chunkSize));
 }
