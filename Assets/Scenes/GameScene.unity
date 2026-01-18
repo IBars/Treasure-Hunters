@@ -1829,6 +1829,9 @@ MonoBehaviour:
   cobblePrefab: {fileID: 3119665523593768622, guid: ebbb42829770e1b429c03c95258793ae, type: 3}
   logPrefab: {fileID: 7445380190104858834, guid: 59428f01148f7f94a80b6ad3eeacb64a, type: 3}
   leafPrefab: {fileID: 3119665523593768622, guid: 88da818cd8d4ecb45ba994e42402a8cf, type: 3}
+  waterPrefab: {fileID: 704389912913050758, guid: 10ad877671033fe4fb91fb09a4977440, type: 3}
+  sandPrefab: {fileID: 3162454922903823221, guid: 1b30f8629d97e6a4db6095b32a2581a3, type: 3}
+  seaLevel: 15
   player: {fileID: 2064128153}
   chunkSize: 16
   viewDistance: 3
@@ -1836,9 +1839,6 @@ MonoBehaviour:
   heightMultiplier: 10
   baseHeight: 20
   treeChance: 0.2
-  waterPrefab: {fileID: 704389912913050758, guid: 10ad877671033fe4fb91fb09a4977440, type: 3}
-  sandPrefab: {fileID: 3162454922903823221, guid: 1b30f8629d97e6a4db6095b32a2581a3, type: 3}
-  seaLevel: 15
   columnsPerFrame: 4
 --- !u!1 &781223370
 GameObject:
@@ -3931,6 +3931,9 @@ MonoBehaviour:
   sprintSpeed: 5.6
   jumpForce: 1.25
   gravity: -28
+  waterSpeed: 2.5
+  waterGravity: -5
+  swimUpForce: 4
   stepHeight: 0.6
 --- !u!1 &2119953959
 GameObject:

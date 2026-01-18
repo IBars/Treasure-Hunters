@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 2617510813264387651}
   - component: {fileID: 7974947697601536225}
   - component: {fileID: 4005810105292932006}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: SandBlock
-  m_TagString: Untagged
+  m_TagString: SandBlock
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

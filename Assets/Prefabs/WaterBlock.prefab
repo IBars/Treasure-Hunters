@@ -9,13 +9,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3982163535306187571}
+  - component: {fileID: 4491624491766315934}
   - component: {fileID: 3853688644807864194}
   - component: {fileID: 3472414754131540508}
   - component: {fileID: 5848162523746384844}
   - component: {fileID: 3121699209414478472}
-  m_Layer: 0
+  m_Layer: 4
   m_Name: WaterBlock
-  m_TagString: Untagged
+  m_TagString: Water
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -35,6 +36,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4491624491766315934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 704389912913050758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2bf5f9f9caaf5441be3e51a8196cb82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaterBlock
 --- !u!114 &3853688644807864194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48,7 +61,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
   blockID: 7
-  health: 1
+  health: 1000000
 --- !u!33 &3472414754131540508
 MeshFilter:
   m_ObjectHideFlags: 0

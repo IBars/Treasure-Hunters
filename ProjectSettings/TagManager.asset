@@ -6,7 +6,12 @@ TagManager:
   tags:
   - GrassBlock
   - DirtBlock
-  - Undefined
+  - StoneBlock
+  - CobblestoneBlock
+  - LogBlock
+  - LeafBlock
+  - SandBlock
+  - Water
   layers:
   - Default
   - TransparentFX
