@@ -37,19 +37,23 @@ public class PlayerController : MonoBehaviour
     }
 
     void HandleMouseLook()
-    {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+{
+    // Mouse inputlarını ham (raw) olarak alıyoruz
+    float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity * 0.02f;
+    float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity * 0.02f;
 
-        // Yukarı-Aşağı bakış (Kamerayı döndürür)
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f); // Kafanın arkaya dönmesini engeller
+    // xRotation değerini güncelle
+    xRotation -= mouseY;
+    
+    // xRotation'ı sınırlıyoruz (-90 ile 90 derece arası)
+    xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
-        playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+    // KAMERA DÖNDÜRME: Yukarı-Aşağı (Sadece kamerayı döndürür)
+    playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        // Sağa-Sola bakış (Vücudu döndürür)
-        transform.Rotate(Vector3.up * mouseX);
-    }
+    // VÜCUT DÖNDÜRME: Sağa-Sola (Karakterin tamamını döndürür)
+    transform.Rotate(Vector3.up * mouseX);
+}
 
     void HandleMovement()
     {

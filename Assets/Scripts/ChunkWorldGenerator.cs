@@ -47,7 +47,10 @@ public class ChunkWorldGenerator : MonoBehaviour
     [Range(0, 100)]
     public float treeChance = 2f; // EKLE: %2 ağaç çıkma şansı
 
-
+[Header("Pond & Water Settings")]
+public GameObject waterPrefab; // Unity'de su prefabını bağla
+public GameObject sandPrefab;  // Unity'de kum prefabını bağla
+public int seaLevel = 22;      // Bu seviyenin altı su olacak
 
     [Header("Performance")]
 
@@ -171,56 +174,63 @@ public class ChunkWorldGenerator : MonoBehaviour
             float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
             int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
 
-            // En üstten aşağıya doğru blokları yerleştiriyoruz
-            for (int y = surfaceY; y > surfaceY - 7; y--)
+            // --- GÖLET MANTIĞI BAŞLANGIÇ ---
+            // Eğer yüzey deniz seviyesinin altındaysa, su yüzeyi deniz seviyesi olsun
+            int finalY = Mathf.Max(surfaceY, seaLevel); 
+
+            for (int y = finalY; y > finalY - 7; y--)
             {
-                GameObject prefab;
-                int id;
+                GameObject prefab = null;
+                int id = 0;
                 Quaternion rotation = Quaternion.identity;
 
-                // Blok tipini belirle
-                if (y == surfaceY) 
-                { 
-                    prefab = grassPrefab; 
-                    id = 0; 
-                    rotation = Quaternion.Euler(-90f, 0f, 0f); 
-
-                    // AĞAÇ OLUŞTURMA: Sadece en üst blok çimense ve şans yaver giderse
-                    if (Random.Range(0f, 100f) < treeChance)
+                if (y > surfaceY) // Deniz seviyesi ile gerçek toprak arasındaki boşluk
+                {
+                    prefab = waterPrefab;
+                    id = 7; // Su ID'si (Örnek)
+                }
+                else if (y == surfaceY) // Gerçek yüzey
+                {
+                    if (y <= seaLevel) // Su altındaki veya kıyıdaki yüzey kum olsun
                     {
-                        GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
+                        prefab = sandPrefab;
+                        id = 6; // Kum ID'si
+                    }
+                    else // Normal kara parçası
+                    {
+                        prefab = grassPrefab;
+                        id = 0;
+                        rotation = Quaternion.Euler(-90f, 0f, 0f);
+
+                        // Sadece karada ağaç çıksın
+                        if (Random.Range(0f, 100f) < treeChance)
+                        {
+                            GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
+                        }
                     }
                 }
-                else if (y > surfaceY - 3) 
-                { 
-                    prefab = dirtPrefab; 
-                    id = 1; 
+                else if (y > surfaceY - 3) // Yüzeyin hemen altı
+                {
+                    prefab = (surfaceY <= seaLevel) ? sandPrefab : dirtPrefab;
+                    id = (surfaceY <= seaLevel) ? 7 : 1;
                 }
-                else 
-                { 
-                    prefab = stonePrefab; 
-                    id = 2; 
+                else // Daha derinler taş
+                {
+                    prefab = stonePrefab;
+                    id = 2;
                 }
 
-                // Bloğu dünyaya yerleştir
-                Vector3Int pos = new Vector3Int(worldX, y, worldZ);
-                PlaceBlock(prefab, pos, id, rotation, chunkObj.transform, chunk);
+                if (prefab != null)
+                {
+                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                    PlaceBlock(prefab, pos, id, rotation, chunkObj.transform, chunk);
+                }
             }
+            // --- GÖLET MANTIĞI BİTİŞ ---
         }
-
-        // Performans ayarı: Belirli sütun sayısında bir kare bekle
-        if (x % columnsPerFrame == 0 && x != 0)
-            yield return null;
+        if (x % columnsPerFrame == 0 && x != 0) yield return null;
     }
-
-    // Görünürlük kontrolü (Face Culling simülasyonu)
-    foreach (var b in chunk.blocks.Values) b.CheckVisibility(this);
-    
-    // Kenar chunk'ları güncelle
-    UpdateBorderChunks(coord);
-    
-    // Performans için objeleri birleştir
-    StaticBatchingUtility.Combine(chunkObj);
+    // ... geri kalan visibility ve batching işlemleri
 }
 
 

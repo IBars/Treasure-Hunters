@@ -128,6 +128,8 @@ public class PlayerInteraction : MonoBehaviour
         else if (id == 3) prefab = worldGenerator.cobblePrefab;
         else if (id == 4) prefab = worldGenerator.logPrefab;
         else if (id == 5) prefab = worldGenerator.leafPrefab;
+        else if (id == 6) prefab = worldGenerator.sandPrefab;
+        else if (id == 7) prefab = worldGenerator.waterPrefab;
 
         if (prefab != null)
         {

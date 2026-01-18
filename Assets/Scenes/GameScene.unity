@@ -1347,6 +1347,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: aa625eba4e4cde940b1f2fe26a0cf526, type: 3}
   - {fileID: 21300000, guid: 7fd3109c8120f40438ca3f1bb58c4f41, type: 3}
   - {fileID: 21300000, guid: 488e84de715e23440ada4490648ac60f, type: 3}
+  - {fileID: 21300000, guid: 9145dc6815f612d438fed966a3deccb1, type: 3}
+  - {fileID: 21300000, guid: d8d4ed6240ca8be4ba476eb7c45b52bd, type: 3}
   handBlocks:
   - {fileID: 2434437697887201475}
   - {fileID: 102092431720751168}
@@ -1834,6 +1836,9 @@ MonoBehaviour:
   heightMultiplier: 10
   baseHeight: 20
   treeChance: 0.2
+  waterPrefab: {fileID: 704389912913050758, guid: 10ad877671033fe4fb91fb09a4977440, type: 3}
+  sandPrefab: {fileID: 3162454922903823221, guid: 1b30f8629d97e6a4db6095b32a2581a3, type: 3}
+  seaLevel: 15
   columnsPerFrame: 4
 --- !u!1 &781223370
 GameObject:
