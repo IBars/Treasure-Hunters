@@ -53,7 +53,13 @@ public class PlayerController : MonoBehaviour
     }
 
     void HandleMovement()
-    {
+{
+    // EKLENEN KONTROL: Controller kapalıysa fonksiyondan çık
+    if (controller == null || !controller.enabled) return;
+
+    isGrounded = controller.isGrounded;
+    // ... geri kalan hareket kodların aynı kalabilir ...
+
         isGrounded = controller.isGrounded;
 
         // Yere değiyorsak velocity'yi sıfırla (Su dışındayken)

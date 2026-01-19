@@ -4,15 +4,26 @@ using System.Collections.Generic;
 
 public class ChunkWorldGenerator : MonoBehaviour
 {
-    public static ChunkWorldGenerator Instance;
+    public static GameObject InstanceGameObject;
+    public static ChunkWorldGenerator Instance; // Eğer eski kodunda 'Instance' kullanılıyorsa bu kalsın
+
+void Awake()
+{
+    Instance = this;
+    InstanceGameObject = this.gameObject;
+    
+    // Eğer Awake içinde başka kodların varsa onları da buraya ekleyebilirsin
+}
 
     [Header("Block Prefabs")]
+    public GameObject leafPrefab; 
     public GameObject grassPrefab;
     public GameObject dirtPrefab;
     public GameObject stonePrefab;
     public GameObject cobblePrefab;
     public GameObject logPrefab; 
-    public GameObject leafPrefab; 
+    public GameObject dimensionBlockPrefab; 
+
 
     [Header("Pond & Water Settings")]
     public GameObject waterPrefab; 
@@ -37,8 +48,6 @@ public class ChunkWorldGenerator : MonoBehaviour
     private Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
     private Vector3Int lastPlayerChunk = new Vector3Int(999, 0, 999);
     private bool generating = false;
-
-    void Awake() => Instance = this;
 
     void Update()
     {
@@ -163,6 +172,11 @@ public class ChunkWorldGenerator : MonoBehaviour
         // block.blockID ataması SİLİNDİ. Prefab üzerindeki değer korunur.
         
         chunk.blocks[pos] = block;
+        // Örnek: Taş (Stone) üretirken %0.1 şansla bu bloğu koy
+if (prefab == stonePrefab && Random.Range(0, 1000) < 1)
+{
+    prefab = dimensionBlockPrefab; // Müfettiş (Inspector) üzerinden atadığın özel blok
+}
     }
 
     void GenerateTree(Vector3Int pos, Transform parent, Chunk chunk)
