@@ -169,7 +169,9 @@ GameObject GetPrefabByID(int id)
     if (id == 2) return worldGenerator.stonePrefab;
     if (id == 4) return worldGenerator.logPrefab;  // Log: 4
     if (id == 5) return worldGenerator.leafPrefab; // Leaf: 5
+    if (id == 6) return worldGenerator.sandPrefab;
     if (id == 8) return worldGenerator.dimensionBlockPrefab; // Senin yeni bloğun
+    if (id == 9) return worldGenerator.cactusPrefab;
     return null;
 }
 

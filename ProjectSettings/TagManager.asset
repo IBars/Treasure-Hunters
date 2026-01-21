@@ -12,6 +12,8 @@ TagManager:
   - LeafBlock
   - SandBlock
   - Water
+  - DimensionBlock
+  - CactusBlock
   layers:
   - Default
   - TransparentFX

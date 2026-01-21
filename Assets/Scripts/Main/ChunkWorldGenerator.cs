@@ -23,6 +23,7 @@ void Awake()
     public GameObject cobblePrefab;
     public GameObject logPrefab; 
     public GameObject dimensionBlockPrefab; 
+    public GameObject cactusPrefab;
 
 
     [Header("Pond & Water Settings")]
