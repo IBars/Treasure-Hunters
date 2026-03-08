@@ -147,99 +147,104 @@ public class OptimizedChunkWorldGenerator : MonoBehaviour
     }
 
     IEnumerator CreateChunk(Vector3Int coord)
+{
+    GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
+    chunkObj.transform.parent = transform;
+    Chunk chunk = new Chunk(coord, chunkObj);
+    chunks.Add(coord, chunk);
+
+    // Performans için blok sayacı
+    int blocksBuiltInThisFrame = 0;
+    // Tek seferde kaç blok oluşturulsun? (Kasma olursa bu sayıyı 30-50 arasına düşür)
+    int maxBlocksPerFrame = 64; 
+
+    for (int x = 0; x < chunkSize; x++)
     {
-        GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
-        chunkObj.transform.parent = transform;
-        Chunk chunk = new Chunk(coord, chunkObj);
-        chunks.Add(coord, chunk);
-
-        for (int x = 0; x < chunkSize; x++)
+        for (int z = 0; z < chunkSize; z++)
         {
-            for (int z = 0; z < chunkSize; z++)
+            int worldX = coord.x * chunkSize + x;
+            int worldZ = coord.z * chunkSize + z;
+            float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
+            int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
+
+            int finalY = Mathf.Max(surfaceY, seaLevel);
+
+            for (int y = finalY; y > finalY - 7; y--)
             {
-                int worldX = coord.x * chunkSize + x;
-                int worldZ = coord.z * chunkSize + z;
-                float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
-                int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
+                Material blockMat = null;
+                int blockID = -1;
+                bool useSpecialPrefab = false;
+                GameObject specialPrefab = null;
 
-                int finalY = Mathf.Max(surfaceY, seaLevel);
-
-                for (int y = finalY; y > finalY - 7; y--)
+                // 1. Su Katmanı
+                if (y > surfaceY) 
                 {
-                    Material blockMat = null;
-                    int blockID = -1;
-                    bool useSpecialPrefab = false;
-                    GameObject specialPrefab = null;
-
-                    // 1. Su Katmanı
-                    if (y > surfaceY) 
+                    useSpecialPrefab = true;
+                    specialPrefab = waterPrefab;
+                }
+                // 2. Yüzey
+                else if (y == surfaceY)
+                {
+                    if (y <= seaLevel) 
                     {
-                        useSpecialPrefab = true;
-                        specialPrefab = waterPrefab;
+                        blockMat = sandMaterial;
+                        blockID = 6;
                     }
-                    // 2. Yüzey
-                    else if (y == surfaceY)
-                    {
-                        if (y <= seaLevel) 
-                        {
-                            blockMat = sandMaterial;
-                            blockID = 6;
-                        }
-                        else 
-                        {
-                            // Grass block (farklı top ve side)
-                            blockID = 0;
-                            // PlaceOptimizedBlock'a 3 material göndereceğiz
-
-                            if (Random.Range(0f, 100f) < treeChance)
-                            {
-                                GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
-                            }
-                        }
-                    }
-                    // 3. Yüzeyin Altı
-                    else if (y > surfaceY - 3) 
-                    {
-                        blockMat = (surfaceY <= seaLevel) ? sandMaterial : dirtMaterial;
-                        blockID = (surfaceY <= seaLevel) ? 6 : 1;
-                    }
-                    // 4. Derinler
                     else 
                     {
-                        blockMat = stoneMaterial;
-                        blockID = 2;
-                        
-                        // Dimension block spawn
-                        if (Random.Range(0, 1000) < 1)
+                        blockID = 0;
+                        if (Random.Range(0f, 100f) < treeChance)
                         {
-                            useSpecialPrefab = true;
-                            specialPrefab = dimensionBlockPrefab;
+                            GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
                         }
                     }
-
-                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                }
+                // 3. Yüzeyin Altı
+                else if (y > surfaceY - 3) 
+                {
+                    blockMat = (surfaceY <= seaLevel) ? sandMaterial : dirtMaterial;
+                    blockID = (surfaceY <= seaLevel) ? 6 : 1;
+                }
+                // 4. Derinler
+                else 
+                {
+                    blockMat = stoneMaterial;
+                    blockID = 2;
                     
-                    if (useSpecialPrefab && specialPrefab != null)
+                    if (Random.Range(0, 1000) < 1)
                     {
-                        PlaceSpecialBlock(specialPrefab, pos, chunkObj.transform, chunk);
-                    }
-                    else if (blockID == 0) // Grass - özel material
-                    {
-                        PlaceOptimizedBlockMultiMat(grassTopMaterial, grassSideMaterial, grassSideMaterial, blockID, pos, chunkObj.transform, chunk);
-                    }
-                    else if (blockMat != null)
-                    {
-                        PlaceOptimizedBlock(blockMat, blockID, pos, chunkObj.transform, chunk);
+                        useSpecialPrefab = true;
+                        specialPrefab = dimensionBlockPrefab;
                     }
                 }
+
+                Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+                
+                // BLOK YERLEŞTİRME
+                if (useSpecialPrefab && specialPrefab != null)
+                {
+                    PlaceSpecialBlock(specialPrefab, pos, chunkObj.transform, chunk);
+                }
+                else if (blockID == 0) // Grass
+                {
+                    PlaceOptimizedBlockMultiMat(grassTopMaterial, grassSideMaterial, dirtMaterial, blockID, pos, chunkObj.transform, chunk);
+                }
+                else if (blockMat != null)
+                {
+                    PlaceOptimizedBlock(blockMat, blockID, pos, chunkObj.transform, chunk);
+                }
+
+                // SAYAÇ KONTROLÜ
+                blocksBuiltInThisFrame++;
+                if (blocksBuiltInThisFrame >= maxBlocksPerFrame)
+                {
+                    blocksBuiltInThisFrame = 0;
+                    yield return null; // Bir sonraki kareye geç
+                }
             }
-            if (x % columnsPerFrame == 0 && x != 0) yield return null;
         }
-        
-        // ÖNEMLİ: İlk oluşumda face culling YAPMA
-        // Çünkü komşu chunk'lar henüz olmayabilir
-        // Oyun başladıktan sonra UpdateVisibleBlocksAroundPlayer halleder
     }
+}
 
     void PlaceOptimizedBlock(Material mat, int id, Vector3Int pos, Transform parent, Chunk chunk)
     {

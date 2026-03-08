@@ -173,7 +173,8 @@ public class OptimizedBlock : MonoBehaviour
     
     mesh.RecalculateNormals(); // Işıklandırmanın düzgün olması için şart
     meshFilter.mesh = mesh;
-    meshCollider.sharedMesh = mesh;
+    Physics.BakeMesh(mesh.GetInstanceID(), false); 
+meshCollider.sharedMesh = mesh;
 }
 
     public void Highlight(bool on)
