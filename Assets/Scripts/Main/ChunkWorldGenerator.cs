@@ -366,92 +366,89 @@ public class OptimizedChunkWorldGenerator : MonoBehaviour
     }
 
     public bool HasBlock(Vector3Int pos)
+{
+    return GetBlockAt(pos) != null;
+}
+
+    public void RemoveBlockManually(GameObject block)
+{
+    if (block == null) return;
+    
+    Vector3Int pos = Vector3Int.RoundToInt(block.transform.position);
+    Vector3Int chunkCoord = new Vector3Int(
+        Mathf.FloorToInt((float)pos.x / chunkSize),
+        0,
+        Mathf.FloorToInt((float)pos.z / chunkSize)
+    );
+
+    if (chunks.ContainsKey(chunkCoord))
     {
-        foreach (var chunk in chunks.Values)
-        {
-            if (chunk.blocks.ContainsKey(pos) || chunk.optimizedBlocks.ContainsKey(pos))
-                return true;
-        }
-        return false;
+        chunks[chunkCoord].optimizedBlocks.Remove(pos);
+        chunks[chunkCoord].blocks.Remove(pos);
     }
 
-    public void RemoveBlockManually(GameObject blockObj)
+    Destroy(block);
+
+    // KRİTİK: Blok silindiğinde 6 komşusunu güncelle (Artık görünür olabilirler)
+    if (enableFaceCulling)
     {
-        Vector3Int pos = Vector3Int.RoundToInt(blockObj.transform.position);
-        
-        foreach (var chunk in chunks.Values)
+        UpdateNeighborsVisibility(pos);
+    }
+}
+
+    public void RegisterNewBlock(GameObject block, Vector3Int pos)
+{
+    Vector3Int chunkCoord = new Vector3Int(
+        Mathf.FloorToInt((float)pos.x / chunkSize),
+        0,
+        Mathf.FloorToInt((float)pos.z / chunkSize)
+    );
+
+    if (!chunks.ContainsKey(chunkCoord)) return;
+
+    OptimizedBlock opt = block.GetComponent<OptimizedBlock>();
+    if (opt != null)
+    {
+        chunks[chunkCoord].optimizedBlocks[pos] = opt;
+        // Yerleşen bloğun ve komşularının görünürlüğünü güncelle
+        if (enableFaceCulling)
         {
-            if (chunk.blocks.ContainsKey(pos))
-            {
-                chunk.blocks.Remove(pos);
-                Destroy(blockObj);
-                UpdateNeighborBlocks(pos);
-                return;
-            }
-            
-            if (chunk.optimizedBlocks.ContainsKey(pos))
-            {
-                chunk.optimizedBlocks.Remove(pos);
-                Destroy(blockObj);
-                UpdateNeighborBlocks(pos);
-                return;
-            }
+            opt.UpdateVisibility(this);
+            UpdateNeighborsVisibility(pos);
         }
     }
+}
 
-    public void RegisterNewBlock(GameObject blockObj, Vector3Int pos)
+    private void UpdateNeighborsVisibility(Vector3Int pos)
+{
+    Vector3Int[] neighbors = {
+        pos + Vector3Int.up, pos + Vector3Int.down,
+        pos + Vector3Int.left, pos + Vector3Int.right,
+        pos + Vector3Int.forward, pos + Vector3Int.back
+    };
+
+    foreach (var nPos in neighbors)
     {
-        Vector3Int chunkCoord = new Vector3Int(
-            Mathf.FloorToInt(pos.x / (float)chunkSize),
-            0,
-            Mathf.FloorToInt(pos.z / (float)chunkSize)
-        );
-
-        if (chunks.ContainsKey(chunkCoord))
-        {
-            OptimizedBlock optBlock = blockObj.GetComponent<OptimizedBlock>();
-            if (optBlock != null)
-            {
-                chunks[chunkCoord].optimizedBlocks[pos] = optBlock;
-                optBlock.UpdateVisibility(this);
-                UpdateNeighborBlocks(pos);
-            }
-            else
-            {
-                Block block = blockObj.GetComponent<Block>();
-                if (block != null)
-                {
-                    chunks[chunkCoord].blocks[pos] = block;
-                }
-            }
-        }
+        OptimizedBlock b = GetBlockAt(nPos);
+        if (b != null) b.UpdateVisibility(this);
     }
+}
 
-    void UpdateNeighborBlocks(Vector3Int pos)
-    {
-        if (!enableFaceCulling) return;
-        
-        Vector3Int[] neighbors = new Vector3Int[]
-        {
-            pos + Vector3Int.up,
-            pos + Vector3Int.down,
-            pos + Vector3Int.forward,
-            pos + Vector3Int.back,
-            pos + Vector3Int.right,
-            pos + Vector3Int.left
-        };
+public OptimizedBlock GetBlockAt(Vector3Int pos)
+{
+    Vector3Int chunkCoord = new Vector3Int(
+        Mathf.FloorToInt((float)pos.x / chunkSize),
+        0,
+        Mathf.FloorToInt((float)pos.z / chunkSize)
+    );
 
-        foreach (var neighborPos in neighbors)
-        {
-            foreach (var chunk in chunks.Values)
-            {
-                if (chunk.optimizedBlocks.ContainsKey(neighborPos))
-                {
-                    chunk.optimizedBlocks[neighborPos].UpdateVisibility(this);
-                }
-            }
-        }
-    }
+    if (chunks.ContainsKey(chunkCoord) && chunks[chunkCoord].optimizedBlocks.ContainsKey(pos))
+        return chunks[chunkCoord].optimizedBlocks[pos];
+    
+    return null;
+}
+
+
 
     public void RegisterNewWater(Vector3Int pos)
     {

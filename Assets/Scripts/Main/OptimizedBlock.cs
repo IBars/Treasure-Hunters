@@ -65,197 +65,116 @@ public class OptimizedBlock : MonoBehaviour
     }
 
     public void UpdateVisibility(OptimizedChunkWorldGenerator world)
+{
+    Vector3Int pos = Vector3Int.RoundToInt(transform.position);
+    
+    // 6 tarafı kontrol et
+    bool[] newVisibleFaces = new bool[6];
+    newVisibleFaces[0] = !world.HasBlock(pos + Vector3Int.up);      // Top
+    newVisibleFaces[1] = !world.HasBlock(pos + Vector3Int.down);    // Bottom
+    newVisibleFaces[2] = !world.HasBlock(pos + Vector3Int.forward); // North
+    newVisibleFaces[3] = !world.HasBlock(pos + Vector3Int.back);    // South
+    newVisibleFaces[4] = !world.HasBlock(pos + Vector3Int.right);   // East
+    newVisibleFaces[5] = !world.HasBlock(pos + Vector3Int.left);    // West
+    
+    bool anyVisible = false;
+    bool hasChanged = false;
+
+    for (int i = 0; i < 6; i++)
     {
-        Vector3Int pos = Vector3Int.RoundToInt(transform.position);
-        
-        // Yeni görünürlük durumunu hesapla
-        bool[] newVisibleFaces = new bool[6];
-        newVisibleFaces[0] = !world.HasBlock(pos + Vector3Int.up);      // Top
-        newVisibleFaces[1] = !world.HasBlock(pos + Vector3Int.down);    // Bottom
-        newVisibleFaces[2] = !world.HasBlock(pos + Vector3Int.forward); // North
-        newVisibleFaces[3] = !world.HasBlock(pos + Vector3Int.back);    // South
-        newVisibleFaces[4] = !world.HasBlock(pos + Vector3Int.right);   // East
-        newVisibleFaces[5] = !world.HasBlock(pos + Vector3Int.left);    // West
-        
-        // Değişiklik var mı kontrol et
-        bool hasChanged = false;
-        for (int i = 0; i < 6; i++)
-        {
-            if (newVisibleFaces[i] != visibleFaces[i])
-            {
-                hasChanged = true;
-                visibleFaces[i] = newVisibleFaces[i];
-            }
-        }
-        
-        // Değişiklik yoksa mesh güncelleme
-        if (!hasChanged) return;
-        
-        // Eğer hiçbir yüz görünmüyorsa bloğu deaktif et
-        bool anyVisible = false;
-        for (int i = 0; i < 6; i++)
-        {
-            if (visibleFaces[i])
-            {
-                anyVisible = true;
-                break;
-            }
-        }
-        
-        if (gameObject.activeSelf != anyVisible)
-        {
-            gameObject.SetActive(anyVisible);
-        }
-        
-        if (anyVisible)
-        {
-            GenerateMesh();
-        }
+        if (newVisibleFaces[i] != visibleFaces[i]) hasChanged = true;
+        visibleFaces[i] = newVisibleFaces[i];
+        if (visibleFaces[i]) anyVisible = true;
     }
 
+    // Performans için: Eğer durum değişmediyse işlem yapma
+    if (!hasChanged && gameObject.activeSelf == anyVisible) return;
+
+    // Hiçbir yüzü görünmeyen bloğu render etmeyi bırak
+    if (gameObject.activeSelf != anyVisible)
+        gameObject.SetActive(anyVisible);
+
+    if (anyVisible)
+        GenerateMesh();
+}
+
     void GenerateMesh()
-    {
-        Mesh mesh = new Mesh();
-        mesh.name = "Block_" + blockID;
-        
-        var vertices = new System.Collections.Generic.List<Vector3>();
-        var triangles = new System.Collections.Generic.List<int>();
-        var uvCoords = new System.Collections.Generic.List<Vector2>();
-        
-        // Submesh için triangle listleri
-        var topTriangles = new System.Collections.Generic.List<int>();
-        var sideTriangles = new System.Collections.Generic.List<int>();
-        var bottomTriangles = new System.Collections.Generic.List<int>();
-        
-        // TOP FACE (Y+) - Submesh 0
-        if (visibleFaces[0])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            topTriangles.Add(vIndex + 0);
-            topTriangles.Add(vIndex + 2);
-            topTriangles.Add(vIndex + 1);
-            topTriangles.Add(vIndex + 2);
-            topTriangles.Add(vIndex + 3);
-            topTriangles.Add(vIndex + 1);
-        }
-        
-        // BOTTOM FACE (Y-) - Submesh 2
-        if (visibleFaces[1])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));
-            vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            bottomTriangles.Add(vIndex + 0);
-            bottomTriangles.Add(vIndex + 1);
-            bottomTriangles.Add(vIndex + 2);
-            bottomTriangles.Add(vIndex + 2);
-            bottomTriangles.Add(vIndex + 1);
-            bottomTriangles.Add(vIndex + 3);
-        }
-        
-        // NORTH FACE (Z+) - Submesh 1
-        if (visibleFaces[2])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));
-            vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            sideTriangles.Add(vIndex + 0);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 3);
-            sideTriangles.Add(vIndex + 1);
-        }
-        
-        // SOUTH FACE (Z-) - Submesh 1
-        if (visibleFaces[3])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            sideTriangles.Add(vIndex + 0);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 3);
-        }
-        
-        // EAST FACE (X+) - Submesh 1
-        if (visibleFaces[4])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            sideTriangles.Add(vIndex + 0);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 3);
-            sideTriangles.Add(vIndex + 1);
-        }
-        
-        // WEST FACE (X-) - Submesh 1
-        if (visibleFaces[5])
-        {
-            int vIndex = vertices.Count;
-            vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f));
-            vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));
-            
-            uvCoords.AddRange(uvs);
-            
-            sideTriangles.Add(vIndex + 0);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 2);
-            sideTriangles.Add(vIndex + 1);
-            sideTriangles.Add(vIndex + 3);
-        }
-        
-        mesh.vertices = vertices.ToArray();
-        mesh.uv = uvCoords.ToArray();
-        
-        // 3 submesh ayarla
-        mesh.subMeshCount = 3;
-        mesh.SetTriangles(topTriangles.ToArray(), 0);      // Top material
-        mesh.SetTriangles(sideTriangles.ToArray(), 1);     // Side material
-        mesh.SetTriangles(bottomTriangles.ToArray(), 2);   // Bottom material
-        
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        
-        meshFilter.mesh = mesh;
-        meshCollider.sharedMesh = mesh;
+{
+    Mesh mesh = new Mesh();
+    mesh.name = "Block_" + blockID;
+    
+    var vertices = new System.Collections.Generic.List<Vector3>();
+    var uvCoords = new System.Collections.Generic.List<Vector2>();
+    
+    var topTriangles = new System.Collections.Generic.List<int>();
+    var sideTriangles = new System.Collections.Generic.List<int>();
+    var bottomTriangles = new System.Collections.Generic.List<int>();
+
+    // --- TOP FACE (Y+) ---
+    if (visibleFaces[0]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));  vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));
+        vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f)); vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));
+        uvCoords.AddRange(uvs);
+        topTriangles.AddRange(new int[] { v, v + 1, v + 2, v + 2, v + 1, v + 3 });
     }
+    
+    // --- BOTTOM FACE (Y-) ---
+    if (visibleFaces[1]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));
+        vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));
+        uvCoords.AddRange(uvs);
+        bottomTriangles.AddRange(new int[] { v, v + 1, v + 2, v + 2, v + 1, v + 3 });
+    }
+
+    // --- NORTH FACE (Z+) - İleri (İndeks: 2) ---
+    if (visibleFaces[2]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));
+        vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));
+        uvCoords.AddRange(uvs);
+        sideTriangles.AddRange(new int[] { v, v + 2, v + 1, v + 1, v + 2, v + 3 });
+    }
+
+    // --- SOUTH FACE (Z-) - Geri (İndeks: 3) ---
+    if (visibleFaces[3]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f));  vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));
+        vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));   vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));
+        uvCoords.AddRange(uvs);
+        sideTriangles.AddRange(new int[] { v, v + 2, v + 1, v + 1, v + 2, v + 3 });
+    }
+
+    // --- EAST FACE (X+) - Sağ (İndeks: 4) ---
+    if (visibleFaces[4]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));
+        vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));
+        uvCoords.AddRange(uvs);
+        sideTriangles.AddRange(new int[] { v, v + 2, v + 1, v + 1, v + 2, v + 3 });
+    }
+
+    // --- WEST FACE (X-) - Sol (İndeks: 5) ---
+    if (visibleFaces[5]) {
+        int v = vertices.Count;
+        vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f));
+        vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));
+        uvCoords.AddRange(uvs);
+        sideTriangles.AddRange(new int[] { v, v + 2, v + 1, v + 1, v + 2, v + 3 });
+    }
+
+    mesh.vertices = vertices.ToArray();
+    mesh.subMeshCount = 3;
+    mesh.SetTriangles(topTriangles.ToArray(), 0);
+    mesh.SetTriangles(sideTriangles.ToArray(), 1);
+    mesh.SetTriangles(bottomTriangles.ToArray(), 2);
+    mesh.uv = uvCoords.ToArray();
+    
+    mesh.RecalculateNormals(); // Işıklandırmanın düzgün olması için şart
+    meshFilter.mesh = mesh;
+    meshCollider.sharedMesh = mesh;
+}
 
     public void Highlight(bool on)
     {
