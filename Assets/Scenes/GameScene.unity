@@ -1824,25 +1824,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 421d493659fb1de47a779a5bbe20283e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leafPrefab: {fileID: 3119665523593768622, guid: 88da818cd8d4ecb45ba994e42402a8cf, type: 3}
-  grassPrefab: {fileID: 2185477441179000435, guid: 06cd1db8b02ee0f4bbd25b69e3839906, type: 3}
-  dirtPrefab: {fileID: 102092431646050029, guid: 381d43d27377cc84dbd8a41adba71670, type: 3}
-  stonePrefab: {fileID: 3119665523593768622, guid: a2eba69cfffce964cab81b6fd19d116f, type: 3}
-  cobblePrefab: {fileID: 3119665523593768622, guid: ebbb42829770e1b429c03c95258793ae, type: 3}
-  logPrefab: {fileID: 7445380190104858834, guid: 59428f01148f7f94a80b6ad3eeacb64a, type: 3}
+  leafMaterial: {fileID: 2100000, guid: 6c498b38a93d24f47b98539c4fe46f90, type: 2}
+  grassTopMaterial: {fileID: 2100000, guid: 443cbeb5621ac0c4b8b89fe4df80137b, type: 2}
+  grassSideMaterial: {fileID: 2100000, guid: cecb3fa5c6b31824fab2a259256308bd, type: 2}
+  logTopMaterial: {fileID: 2100000, guid: 6711f49188c74404c941ba92c69ef83d, type: 2}
+  logSideMaterial: {fileID: 2100000, guid: c70e254023e7a8e478fb4938fb75ce7b, type: 2}
+  dirtMaterial: {fileID: 2100000, guid: 4437c52866e90f044bc4908e2576ae51, type: 2}
+  stoneMaterial: {fileID: 2100000, guid: 8dbc87aca2fda43439a8e094601af756, type: 2}
+  cobbleMaterial: {fileID: 2100000, guid: e6ab57cb179f0d14dac733ab994f75a8, type: 2}
+  sandMaterial: {fileID: 2100000, guid: 9ac55b77145a1fb4494c79d6fd553bf6, type: 2}
+  waterMaterial: {fileID: 2100000, guid: 955fd1a52004c0c4f88f72f3fda02246, type: 2}
+  dimensionBlockMaterial: {fileID: 2100000, guid: df914d2d1e06d9d4f8fde1656f923106, type: 2}
+  cactusMaterial: {fileID: 2100000, guid: 35ba7a56a75245a40aeb68536a6e3e2d, type: 2}
   dimensionBlockPrefab: {fileID: 8414272670709964545, guid: e3bfbe5d94b60734aa4c54a8e4f3c424, type: 3}
-  cactusPrefab: {fileID: 3119665523593768622, guid: 70a5151e1ed1d8e4fa747ab887556207, type: 3}
   waterPrefab: {fileID: 704389912913050758, guid: 10ad877671033fe4fb91fb09a4977440, type: 3}
-  sandPrefab: {fileID: 3162454922903823221, guid: 1b30f8629d97e6a4db6095b32a2581a3, type: 3}
-  seaLevel: 15
   player: {fileID: 2064128153}
   chunkSize: 16
-  viewDistance: 3
+  viewDistance: 1
   noiseScale: 0.02
   heightMultiplier: 10
   baseHeight: 20
+  seaLevel: 15
   treeChance: 0.2
-  columnsPerFrame: 4
+  columnsPerFrame: 8
+  enableFaceCulling: 1
+  visibilityUpdateInterval: 2
+  blocksPerVisibilityUpdate: 50
 --- !u!1 &698797873
 GameObject:
   m_ObjectHideFlags: 0
