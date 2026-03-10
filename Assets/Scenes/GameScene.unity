@@ -1840,7 +1840,7 @@ MonoBehaviour:
   waterPrefab: {fileID: 704389912913050758, guid: 10ad877671033fe4fb91fb09a4977440, type: 3}
   player: {fileID: 2064128153}
   chunkSize: 16
-  viewDistance: 3
+  viewDistance: 1
   noiseScale: 0.02
   heightMultiplier: 10
   baseHeight: 20

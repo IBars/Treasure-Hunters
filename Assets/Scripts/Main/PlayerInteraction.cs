@@ -25,6 +25,10 @@ public class UpdatedPlayerInteraction : MonoBehaviour
     private GameObject lastHighlightedBlockObj;
     private OptimizedBlock lastHighlightedOptBlock;
     private Block lastHighlightedBlock;
+    
+    // Mining için geçici değişkenler
+    private GameObject currentMiningBlock;
+    private float currentMiningTime = 0f;
 
     void Start()
     {
@@ -90,115 +94,131 @@ public class UpdatedPlayerInteraction : MonoBehaviour
 
     void HandleMining()
     {
-        if (!Input.GetMouseButton(0)) return;
+        if (!Input.GetMouseButton(0))
+        {
+            // Mouse bırakıldı - mining sıfırla
+            currentMiningBlock = null;
+            currentMiningTime = 0f;
+            return;
+        }
 
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2));
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
         {
-            // Önce optimized block'u dene
-            OptimizedBlock optBlock = hit.collider.GetComponent<OptimizedBlock>();
+            GameObject hitBlock = hit.collider.gameObject;
+            
+            // Farklı bloğa geçildiyse sıfırla
+            if (currentMiningBlock != hitBlock)
+            {
+                currentMiningBlock = hitBlock;
+                currentMiningTime = 0f;
+            }
+            
+            // OptimizedBlock kontrolü
+            OptimizedBlock optBlock = hitBlock.GetComponent<OptimizedBlock>();
             if (optBlock != null)
             {
-                optBlock.health -= Time.deltaTime * breakSpeed;
-
-                if (optBlock.health <= 0)
+                currentMiningTime += Time.deltaTime * breakSpeed;
+                
+                // Health'e göre kır
+                if (currentMiningTime >= optBlock.health)
                 {
                     int dropID = (optBlock.blockID == 2) ? 3 : optBlock.blockID;
                     AddToInventory(dropID);
-                    worldGenerator.RemoveBlockManually(hit.collider.gameObject);
+                    worldGenerator.RemoveBlockManually(hitBlock);
+                    
+                    currentMiningBlock = null;
+                    currentMiningTime = 0f;
                 }
                 return;
             }
             
-            // Değilse eski Block'u dene
-            Block b = hit.collider.GetComponent<Block>();
+            // Eski Block kontrolü
+            Block b = hitBlock.GetComponent<Block>();
             if (b != null)
             {
-                b.health -= Time.deltaTime * breakSpeed;
-
-                if (b.health <= 0)
+                currentMiningTime += Time.deltaTime * breakSpeed;
+                
+                if (currentMiningTime >= b.health)
                 {
                     int dropID = (b.blockID == 2) ? 3 : b.blockID;
                     AddToInventory(dropID);
-                    worldGenerator.RemoveBlockManually(hit.collider.gameObject);
+                    worldGenerator.RemoveBlockManually(hitBlock);
+                    
+                    currentMiningBlock = null;
+                    currentMiningTime = 0f;
                 }
             }
+        }
+        else
+        {
+            // Hiçbir şeye bakmıyorsa sıfırla
+            currentMiningBlock = null;
+            currentMiningTime = 0f;
         }
     }
 
     void HandleBuilding()
+{
+    if (!Input.GetMouseButtonDown(1)) return;
+
+    Ray ray = Camera.main.ScreenPointToRay(
+        new Vector3(Screen.width / 2, Screen.height / 2)
+    );
+
+    if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
     {
-        if (!Input.GetMouseButtonDown(1)) return;
-
-        Ray ray = Camera.main.ScreenPointToRay(
-            new Vector3(Screen.width / 2, Screen.height / 2)
-        );
-
-        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance))
+        DimensionBlock dimBlock = hit.collider.GetComponentInParent<DimensionBlock>();
+        if (dimBlock != null)
         {
-            DimensionBlock dimBlock = hit.collider.GetComponentInParent<DimensionBlock>();
-            if (dimBlock != null)
-            {
-                dimBlock.Interact(player);
-                return;
-            }
-        }
-
-        if (inventoryCounts[selectedSlot] <= 0 || slotBlockIDs[selectedSlot] == -1)
+            dimBlock.Interact(player);
             return;
-
-        if (Physics.Raycast(ray, out RaycastHit hitBuilding, interactionDistance))
-        {
-            Vector3 spawnPos = hitBuilding.transform.position + hitBuilding.normal;
-            Vector3Int gridPos = Vector3Int.RoundToInt(spawnPos);
-
-            if (Vector3.Distance(spawnPos, player.position) < 0.8f) return;
-
-            int id = slotBlockIDs[selectedSlot];
-            GameObject newBlock = new GameObject($"Block_{id}");
-            newBlock.transform.position = (Vector3)gridPos;
-            
-            OptimizedBlock optBlock = newBlock.AddComponent<OptimizedBlock>();
-            
-            // Grass veya Log için özel material sistemi
-            if (id == 0) // Grass
-            {
-                optBlock.Initialize(
-                    worldGenerator.grassTopMaterial, 
-                    worldGenerator.grassSideMaterial, 
-                    worldGenerator.dirtMaterial, 
-                    id
-                );
-            }
-            else if (id == 4) // Log
-            {
-                optBlock.Initialize(
-                    worldGenerator.logTopMaterial, 
-                    worldGenerator.logSideMaterial, 
-                    worldGenerator.logTopMaterial, 
-                    id
-                );
-            }
-            else
-            {
-                Material mat = GetMaterialByID(id);
-                if (mat != null)
-                {
-                    optBlock.Initialize(mat, id);
-                }
-                else
-                {
-                    Destroy(newBlock);
-                    return;
-                }
-            }
-
-            worldGenerator.RegisterNewBlock(newBlock, gridPos);
-            inventoryCounts[selectedSlot]--;
-            UpdateUI();
         }
     }
+
+    if (inventoryCounts[selectedSlot] <= 0 || slotBlockIDs[selectedSlot] == -1)
+        return;
+
+    if (Physics.Raycast(ray, out RaycastHit hitBuilding, interactionDistance))
+    {
+        Vector3 spawnPos = hitBuilding.transform.position + hitBuilding.normal;
+        Vector3Int gridPos = Vector3Int.RoundToInt(spawnPos);
+
+        if (Vector3.Distance(spawnPos, player.position) < 0.8f) return;
+
+        int id = slotBlockIDs[selectedSlot];
+        GameObject newBlock = new GameObject($"Block_{id}");
+        newBlock.transform.position = (Vector3)gridPos;
+
+        OptimizedBlock optBlock = newBlock.AddComponent<OptimizedBlock>();
+
+        if (id == 0)
+            optBlock.Initialize(worldGenerator.grassTopMaterial, worldGenerator.grassSideMaterial, worldGenerator.dirtMaterial, id);
+        else if (id == 4)
+            optBlock.Initialize(worldGenerator.logTopMaterial, worldGenerator.logSideMaterial, worldGenerator.logTopMaterial, id);
+        else
+        {
+            Material mat = GetMaterialByID(id);
+            if (mat != null) optBlock.Initialize(mat, id);
+            else { Destroy(newBlock); return; }
+        }
+
+        worldGenerator.RegisterNewBlock(newBlock, gridPos);
+        inventoryCounts[selectedSlot]--;
+
+        // ✅ FIX 1: Slot boşaldıysa ID'yi sıfırla
+        if (inventoryCounts[selectedSlot] <= 0)
+        {
+            inventoryCounts[selectedSlot] = 0;
+            slotBlockIDs[selectedSlot] = -1;
+        }
+
+        UpdateUI();
+    }
+}
+
+
 
     Material GetMaterialByID(int id)
     {
@@ -267,6 +287,7 @@ public class UpdatedPlayerInteraction : MonoBehaviour
 
     void AddToInventory(int id)
     {
+        // Önce aynı tipte slot var mı bak
         for (int i = 0; i < 10; i++)
         {
             if (slotBlockIDs[i] == id)
@@ -277,6 +298,7 @@ public class UpdatedPlayerInteraction : MonoBehaviour
             }
         }
 
+        // Boş slot bul - EN SOLDAN başla
         for (int i = 0; i < 10; i++)
         {
             if (slotBlockIDs[i] == -1)
@@ -287,27 +309,40 @@ public class UpdatedPlayerInteraction : MonoBehaviour
                 return;
             }
         }
+        
+        Debug.Log("Envanter dolu!");
     }
 
     public void UpdateUI()
+{
+    for (int i = 0; i < 10; i++)
     {
-        for (int i = 0; i < 10; i++)
+        if (inventoryCounts[i] <= 0 || slotBlockIDs[i] == -1)
         {
-            if (inventoryCounts[i] <= 0 || slotBlockIDs[i] == -1)
-            {
-                slotIcons[i].enabled = false;
-                slotTexts[i].text = "";
-                continue;
-            }
+            slotIcons[i].sprite = null;
+            slotIcons[i].enabled = false;
+            slotTexts[i].text = "";
+            continue;
+        }
 
+        int id = slotBlockIDs[i];
+
+        // ✅ FIX 2: Sprite'ı ata ve rengi tam opak yap
+        if (id >= 0 && id < blockIcons.Length && blockIcons[id] != null)
+        {
+            slotIcons[i].sprite = blockIcons[id];
+            slotIcons[i].color = Color.white; // alpha'yı sıfırla
             slotIcons[i].enabled = true;
-            if (slotBlockIDs[i] < blockIcons.Length)
-            {
-                slotIcons[i].sprite = blockIcons[slotBlockIDs[i]];
-                slotTexts[i].text = inventoryCounts[i].ToString();
-            }
+            slotTexts[i].text = inventoryCounts[i].ToString();
+        }
+        else
+        {
+            Debug.LogWarning($"Block ID {id} için icon bulunamadı! blockIcons dizisi Inspector'da doğru atandı mı?");
+            slotIcons[i].enabled = false;
+            slotTexts[i].text = inventoryCounts[i].ToString();
         }
     }
+}
 
     void UpdateSelectionUI()
     {
