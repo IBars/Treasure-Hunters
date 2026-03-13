@@ -1364,6 +1364,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4459864851310106429, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
   m_PrefabInstance: {fileID: 1195211605}
   m_PrefabAsset: {fileID: 0}
+--- !u!20 &347622351 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 4459864851310106426, guid: 6bacecc4f3df9584198879c73a6b6c36, type: 3}
+  m_PrefabInstance: {fileID: 1195211605}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &358164568
 GameObject:
   m_ObjectHideFlags: 0
@@ -1846,10 +1851,13 @@ MonoBehaviour:
   baseHeight: 20
   seaLevel: 15
   treeChance: 0.2
-  columnsPerFrame: 8
   enableFaceCulling: 1
   visibilityUpdateInterval: 2
   blocksPerVisibilityUpdate: 50
+  mainCamera: {fileID: 347622351}
+  enableFrustumCulling: 1
+  frustumUpdateInterval: 0.1
+  enableSpawnWait: 1
 --- !u!1 &698797873
 GameObject:
   m_ObjectHideFlags: 0
