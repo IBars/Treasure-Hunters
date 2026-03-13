@@ -55,9 +55,9 @@ public class OptimizedBlock : MonoBehaviour
         }
         
         materials = new Material[3];
-        materials[0] = new Material(topMat);
-        materials[1] = new Material(sideMat);
-        materials[2] = new Material(bottomMat);
+        materials[0] = topMat    != null ? new Material(topMat)    : new Material(Shader.Find("Standard"));
+        materials[1] = sideMat   != null ? new Material(sideMat)   : new Material(Shader.Find("Standard"));
+        materials[2] = bottomMat != null ? new Material(bottomMat) : new Material(Shader.Find("Standard"));
         
         meshRenderer.materials = materials;
         

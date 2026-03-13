@@ -14,16 +14,16 @@ public class OptimizedChunkWorldGenerator : MonoBehaviour
     }
 
     [Header("Block Materials")]
-    public Material leafMaterial; 
-    
+    public Material leafMaterial;
+
     [Header("Grass Materials")]
     public Material grassTopMaterial;
     public Material grassSideMaterial;
-    
+
     [Header("Log Materials")]
     public Material logTopMaterial;
     public Material logSideMaterial;
-    
+
     [Header("Other Materials")]
     public Material dirtMaterial;
     public Material stoneMaterial;
@@ -33,14 +33,14 @@ public class OptimizedChunkWorldGenerator : MonoBehaviour
     public Material dimensionBlockMaterial;
     public Material cactusMaterial;
 
-    [Header("Special Prefabs (Non-optimized)")]
-    public GameObject dimensionBlockPrefab; 
+    [Header("Special Prefabs")]
+    public GameObject dimensionBlockPrefab;
     public GameObject waterPrefab;
 
     [Header("World Settings")]
     public Transform player;
     public int chunkSize = 16;
-    public int viewDistance = 2;
+    public int viewDistance = 3;
     public float noiseScale = 0.05f;
     public int heightMultiplier = 15;
     public int baseHeight = 20;
@@ -51,425 +51,372 @@ public class OptimizedChunkWorldGenerator : MonoBehaviour
     public float treeChance = 2f;
 
     [Header("Performance")]
-    public int columnsPerFrame = 4;
-    public bool enableFaceCulling = true; // ŞİMDİLİK KAPALI - TEST İÇİN
-    
-    [Header("Update Settings")]
-    public float visibilityUpdateInterval = 2f; // 0.5'ten 2'ye çıkardık
-    private float lastVisibilityUpdate = 0f;
-    public int blocksPerVisibilityUpdate = 50; // Her frame'de kaç blok güncellenir
+    public bool enableFaceCulling = true;
+    public float visibilityUpdateInterval = 2f;
+    public int blocksPerVisibilityUpdate = 50;
+
+    [Header("Frustum Culling")]
+    public Camera mainCamera;
+    public bool enableFrustumCulling = true;
+    public float frustumUpdateInterval = 0.1f;
+    private float lastFrustumUpdate;
+
+    [Header("Spawn Protection")]
+    public bool enableSpawnWait = true;
+    private CharacterController playerCC;
+
+    // Fallback materyal — hiçbir şey null'a düşmez
+    private Material fallbackMaterial;
 
     private Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
+    private HashSet<Vector3Int> blockPositions = new HashSet<Vector3Int>();
+
+    private Vector3Int targetCenter  = new Vector3Int(999, 0, 999);
     private Vector3Int lastPlayerChunk = new Vector3Int(999, 0, 999);
-    private bool generating = false;
+    private bool manageRunning = false;
+
+    // ───────────────────────────────────────────────────────────────────────
+    void Start()
+    {
+        // Hiçbir materyal atanmamış olsa bile kırılmayacak fallback
+        fallbackMaterial = new Material(Shader.Find("Standard"));
+        fallbackMaterial.color = Color.magenta;
+
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (player != null)
+        {
+            playerCC = player.GetComponent<CharacterController>();
+            if (enableSpawnWait && playerCC != null)
+                playerCC.enabled = false;
+
+            targetCenter = WorldToChunk(player.position);
+            StartCoroutine(SpawnSequence());
+        }
+    }
 
     void Update()
     {
-        if (!player || generating) return;
+        if (!player) return;
 
-        Vector3Int currentChunk = new Vector3Int(
-            Mathf.FloorToInt(player.position.x / chunkSize),
-            0,
-            Mathf.FloorToInt(player.position.z / chunkSize)
-        );
-
-        if (currentChunk != lastPlayerChunk)
+        Vector3Int current = WorldToChunk(player.position);
+        if (current != lastPlayerChunk)
         {
-            StartCoroutine(ManageChunks(currentChunk));
-            lastPlayerChunk = currentChunk;
+            lastPlayerChunk = current;
+            targetCenter    = current;
+            if (!manageRunning)
+                StartCoroutine(ChunkLoop());
         }
-        
-        // Periyodik visibility güncellemesi
-        if (enableFaceCulling && Time.time - lastVisibilityUpdate > visibilityUpdateInterval)
+
+        if (enableFrustumCulling && Time.time - lastFrustumUpdate > frustumUpdateInterval)
         {
-            UpdateVisibleBlocksAroundPlayer();
-            lastVisibilityUpdate = Time.time;
+            UpdateFrustumCulling();
+            lastFrustumUpdate = Time.time;
         }
     }
 
-    IEnumerator ManageChunks(Vector3Int center)
+    // ─── SPAWN ─────────────────────────────────────────────────────────────
+    IEnumerator SpawnSequence()
     {
-        generating = true;
-        HashSet<Vector3Int> needed = new HashSet<Vector3Int>();
+        // 1. Oyuncunun altındaki chunk'ı hemen üret
+        Vector3Int spawnChunk = targetCenter;
+        yield return StartCoroutine(CreateChunk(spawnChunk));
 
-        for (int x = -viewDistance; x <= viewDistance; x++)
+        // 2. Oyuncuyu doğru zemine koy ve serbest bırak
+        if (enableSpawnWait && playerCC != null)
         {
-            for (int z = -viewDistance; z <= viewDistance; z++)
-            {
-                Vector3Int coord = new Vector3Int(center.x + x, 0, center.z + z);
-                needed.Add(coord);
+            int sy = GetSurfaceY(Mathf.FloorToInt(player.position.x),
+                                 Mathf.FloorToInt(player.position.z));
+            Vector3 p = player.position;
+            p.y = sy + 1.5f;
+            player.position = p;
+            playerCC.enabled = true;
+        }
 
+        // 3. Etrafını arka planda üret
+        yield return StartCoroutine(ChunkLoop());
+    }
+
+    // ─── ANA CHUNK DÖNGÜSÜ ────────────────────────────────────────────────
+    IEnumerator ChunkLoop()
+    {
+        manageRunning = true;
+
+        while (true)
+        {
+            Vector3Int center = targetCenter;
+
+            // viewDistance içindeki tüm chunk'ları mesafeye göre sırala
+            List<Vector3Int> needed = GetSortedNeeded(center);
+
+            bool anyCreated = false;
+            foreach (Vector3Int coord in needed)
+            {
                 if (!chunks.ContainsKey(coord))
+                {
                     yield return StartCoroutine(CreateChunk(coord));
-                else
-                    chunks[coord].root.SetActive(true);
-            }
-        }
+                    anyCreated = true;
 
-        foreach (var pair in chunks)
-            if (!needed.Contains(pair.Key))
-                pair.Value.root.SetActive(false);
-
-        // Tüm chunk'lar oluşturulduktan SONRA face culling yap
-        // ÖNEMLI: Bunu asenkron yap, yoksa oyun donar
-        if (enableFaceCulling)
-        {
-            StartCoroutine(UpdateAllChunksVisibility(needed));
-        }
-
-        generating = false;
-    }
-    
-    IEnumerator UpdateAllChunksVisibility(HashSet<Vector3Int> chunkCoords)
-    {
-        int blocksProcessed = 0;
-        foreach (var coord in chunkCoords)
-        {
-            if (chunks.ContainsKey(coord))
-            {
-                // ToList() ile kopyasını al - enumeration hatası önlenir
-                var blocksList = new List<OptimizedBlock>(chunks[coord].optimizedBlocks.Values);
-                
-                foreach (var block in blocksList)
-                {
-                    if (block != null)
-                    {
-                        block.UpdateVisibility(this);
-                        blocksProcessed++;
-                        
-                        // Her 20 blokta bir yield yap
-                        if (blocksProcessed % 20 == 0)
-                            yield return null;
-                    }
+                    // Oyuncu hareket ettiyse listeyi yeniden hesapla
+                    if (targetCenter != center) break;
                 }
             }
+
+            // Menzil dışına çıkan chunk'ları gizle
+            HashSet<Vector3Int> neededSet = new HashSet<Vector3Int>(needed);
+            foreach (var pair in chunks)
+                if (!neededSet.Contains(pair.Key) && pair.Value.root != null)
+                    pair.Value.root.SetActive(false);
+
+            // Her şey tamam ve oyuncu duruyor → çık
+            if (!anyCreated && targetCenter == center)
+                break;
+
+            yield return null;
         }
+
+        manageRunning = false;
     }
 
+    List<Vector3Int> GetSortedNeeded(Vector3Int center)
+    {
+        var list = new List<Vector3Int>();
+        for (int x = -viewDistance; x <= viewDistance; x++)
+            for (int z = -viewDistance; z <= viewDistance; z++)
+                list.Add(new Vector3Int(center.x + x, 0, center.z + z));
+
+        list.Sort((a, b) =>
+        {
+            float da = (new Vector2(a.x, a.z) - new Vector2(center.x, center.z)).sqrMagnitude;
+            float db = (new Vector2(b.x, b.z) - new Vector2(center.x, center.z)).sqrMagnitude;
+            return da.CompareTo(db);
+        });
+        return list;
+    }
+
+    // ─── CHUNK OLUŞTURMA ──────────────────────────────────────────────────
     IEnumerator CreateChunk(Vector3Int coord)
-{
-    GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
-    chunkObj.transform.parent = transform;
-    Chunk chunk = new Chunk(coord, chunkObj);
-    chunks.Add(coord, chunk);
-
-    // Performans için blok sayacı
-    int blocksBuiltInThisFrame = 0;
-    // Tek seferde kaç blok oluşturulsun? (Kasma olursa bu sayıyı 30-50 arasına düşür)
-    int maxBlocksPerFrame = 64; 
-
-    for (int x = 0; x < chunkSize; x++)
     {
-        for (int z = 0; z < chunkSize; z++)
+        if (chunks.ContainsKey(coord)) yield break;
+
+        GameObject chunkObj = new GameObject($"Chunk_{coord.x}_{coord.z}");
+        chunkObj.transform.parent = transform;
+        Chunk chunk = new Chunk(coord, chunkObj);
+        chunks.Add(coord, chunk);
+
+        int batchCount = 0;
+        const int MAX_PER_FRAME = 80;
+
+        for (int x = 0; x < chunkSize; x++)
         {
-            int worldX = coord.x * chunkSize + x;
-            int worldZ = coord.z * chunkSize + z;
-            float noise = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
-            int surfaceY = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
-
-            int finalY = Mathf.Max(surfaceY, seaLevel);
-
-            for (int y = finalY; y > finalY - 7; y--)
+            for (int z = 0; z < chunkSize; z++)
             {
-                Material blockMat = null;
-                int blockID = -1;
-                bool useSpecialPrefab = false;
-                GameObject specialPrefab = null;
+                int worldX = coord.x * chunkSize + x;
+                int worldZ = coord.z * chunkSize + z;
 
-                // 1. Su Katmanı
-                if (y > surfaceY) 
+                float noise    = SimplexNoise.Noise(worldX * noiseScale, worldZ * noiseScale);
+                int surfaceY   = Mathf.FloorToInt(noise * heightMultiplier) + baseHeight;
+                int topY       = Mathf.Max(surfaceY, seaLevel);
+
+                for (int y = topY; y > topY - 7; y--)
                 {
-                    useSpecialPrefab = true;
-                    specialPrefab = waterPrefab;
-                }
-                // 2. Yüzey
-                else if (y == surfaceY)
-                {
-                    if (y <= seaLevel) 
+                    Vector3Int pos = new Vector3Int(worldX, y, worldZ);
+
+                    // ── Su katmanı ──────────────────────────────────────
+                    if (y > surfaceY)
                     {
-                        blockMat = sandMaterial;
-                        blockID = 6;
-                    }
-                    else 
-                    {
-                        blockID = 0;
-                        if (Random.Range(0f, 100f) < treeChance)
+                        if (waterPrefab != null)
                         {
-                            GenerateTree(new Vector3Int(worldX, y + 1, worldZ), chunkObj.transform, chunk);
+                            Instantiate(waterPrefab, (Vector3)pos, Quaternion.identity, chunkObj.transform);
+                            blockPositions.Add(pos);
+                        }
+                        continue;
+                    }
+
+                    // ── Blok türünü belirle ─────────────────────────────
+                    int      blockID  = -1;
+                    Material top      = null;
+                    Material side     = null;
+                    Material bottom   = null;
+
+                    bool isSand = surfaceY <= seaLevel;
+
+                    if (y == surfaceY)
+                    {
+                        if (isSand)
+                        {
+                            blockID = 6;
+                            top = side = bottom = Safe(sandMaterial);
+                        }
+                        else
+                        {
+                            blockID = 0;
+                            top    = Safe(grassTopMaterial);
+                            side   = Safe(grassSideMaterial);
+                            bottom = Safe(dirtMaterial);
+
+                            if (Random.Range(0f, 100f) < treeChance)
+                                GenerateTree(new Vector3Int(worldX, y + 1, worldZ),
+                                             chunkObj.transform, chunk);
                         }
                     }
-                }
-                // 3. Yüzeyin Altı
-                else if (y > surfaceY - 3) 
-                {
-                    blockMat = (surfaceY <= seaLevel) ? sandMaterial : dirtMaterial;
-                    blockID = (surfaceY <= seaLevel) ? 6 : 1;
-                }
-                // 4. Derinler
-                else 
-                {
-                    blockMat = stoneMaterial;
-                    blockID = 2;
-                    
-                    if (Random.Range(0, 1000) < 1)
+                    else if (y > surfaceY - 3)
                     {
-                        useSpecialPrefab = true;
-                        specialPrefab = dimensionBlockPrefab;
+                        if (isSand) { blockID = 6; top = side = bottom = Safe(sandMaterial); }
+                        else        { blockID = 1; top = side = bottom = Safe(dirtMaterial); }
                     }
-                }
-
-                Vector3Int pos = new Vector3Int(worldX, y, worldZ);
-                
-                // BLOK YERLEŞTİRME
-                if (useSpecialPrefab && specialPrefab != null)
-                {
-                    PlaceSpecialBlock(specialPrefab, pos, chunkObj.transform, chunk);
-                }
-                else if (blockID == 0) // Grass
-                {
-                    PlaceOptimizedBlockMultiMat(grassTopMaterial, grassSideMaterial, dirtMaterial, blockID, pos, chunkObj.transform, chunk);
-                }
-                else if (blockMat != null)
-                {
-                    PlaceOptimizedBlock(blockMat, blockID, pos, chunkObj.transform, chunk);
-                }
-
-                // SAYAÇ KONTROLÜ
-                blocksBuiltInThisFrame++;
-                if (blocksBuiltInThisFrame >= maxBlocksPerFrame)
-                {
-                    blocksBuiltInThisFrame = 0;
-                    yield return null; // Bir sonraki kareye geç
-                }
-            }
-        }
-    }
-}
-
-    void PlaceOptimizedBlock(Material mat, int id, Vector3Int pos, Transform parent, Chunk chunk)
-    {
-        if (chunk.blocks.ContainsKey(pos)) return;
-
-        GameObject blockObj = new GameObject($"Block_{id}");
-        blockObj.transform.position = (Vector3)pos;
-        blockObj.transform.parent = parent;
-        blockObj.hideFlags = HideFlags.HideInHierarchy;
-        
-        OptimizedBlock block = blockObj.AddComponent<OptimizedBlock>();
-        block.Initialize(mat, id);
-        
-        chunk.optimizedBlocks[pos] = block;
-    }
-    
-    void PlaceOptimizedBlockMultiMat(Material topMat, Material sideMat, Material bottomMat, int id, Vector3Int pos, Transform parent, Chunk chunk)
-    {
-        if (chunk.blocks.ContainsKey(pos)) return;
-
-        GameObject blockObj = new GameObject($"Block_{id}");
-        blockObj.transform.position = (Vector3)pos;
-        blockObj.transform.parent = parent;
-        blockObj.hideFlags = HideFlags.HideInHierarchy;
-        
-        OptimizedBlock block = blockObj.AddComponent<OptimizedBlock>();
-        block.Initialize(topMat, sideMat, bottomMat, id);
-        
-        chunk.optimizedBlocks[pos] = block;
-    }
-    
-    void PlaceSpecialBlock(GameObject prefab, Vector3Int pos, Transform parent, Chunk chunk)
-    {
-        if (chunk.blocks.ContainsKey(pos)) return;
-
-        GameObject blockObj = Instantiate(prefab, (Vector3)pos, prefab.transform.rotation, parent);
-        blockObj.hideFlags = HideFlags.HideInHierarchy;
-        
-        Block block = blockObj.GetComponent<Block>();
-        if (block != null)
-        {
-            chunk.blocks[pos] = block;
-        }
-    }
-
-    void GenerateTree(Vector3Int pos, Transform parent, Chunk chunk)
-    {
-        int height = Random.Range(4, 7);
-        
-        // Log blokları - çoklu material
-        for (int i = 0; i < height; i++)
-        {
-            PlaceOptimizedBlockMultiMat(logTopMaterial, logSideMaterial, logTopMaterial, 4, pos + Vector3Int.up * i, parent, chunk);
-        }
-
-        Vector3Int leafCenter = pos + Vector3Int.up * height;
-        for (int x = -2; x <= 2; x++)
-        {
-            for (int y = -1; y <= 2; y++)
-            {
-                for (int z = -2; z <= 2; z++)
-                {
-                    Vector3Int lPos = leafCenter + new Vector3Int(x, y, z);
-                    if (Vector3.Distance(leafCenter, lPos) < 2.8f)
+                    else
                     {
-                        PlaceOptimizedBlock(leafMaterial, 5, lPos, parent, chunk);
+                        blockID = 2;
+                        top = side = bottom = Safe(stoneMaterial);
+                    }
+
+                    if (blockID < 0) continue;
+
+                    // ── Blok GameObject oluştur ─────────────────────────
+                    try
+                    {
+                        GameObject blockObj = new GameObject($"B_{worldX}_{y}_{worldZ}");
+                        blockObj.transform.position = (Vector3)pos;
+                        blockObj.transform.parent   = chunkObj.transform;
+
+                        OptimizedBlock ob = blockObj.AddComponent<OptimizedBlock>();
+                        ob.Initialize(top, side, bottom, blockID);
+
+                        chunk.optimizedBlocks[pos] = ob;
+                        blockPositions.Add(pos);
+                    }
+                    catch (System.Exception e)
+                    {
+                        // Tek bir blok patlarsa tüm chunk durmasın
+                        Debug.LogWarning($"[TerrainGen] Blok atlandı {pos}: {e.Message}");
+                        continue;
+                    }
+
+                    batchCount++;
+                    if (batchCount >= MAX_PER_FRAME)
+                    {
+                        batchCount = 0;
+                        yield return null;
                     }
                 }
             }
         }
     }
 
-    IEnumerator UpdateChunkVisibility(Chunk chunk)
+    // Null materyali fallback ile değiştirir — asla null dönmez
+    Material Safe(Material mat) => mat != null ? mat : fallbackMaterial;
+
+    // ─── FRUSTUM CULLING ───────────────────────────────────────────────────
+    void UpdateFrustumCulling()
     {
-        int count = 0;
-        foreach (var block in chunk.optimizedBlocks.Values)
+        if (mainCamera == null) return;
+        Plane[] planes  = GeometryUtility.CalculateFrustumPlanes(mainCamera);
+        Vector3Int center = targetCenter;
+
+        foreach (var pair in chunks)
         {
-            if (block != null)
+            if (pair.Value.root == null) continue;
+            Vector3Int coord = pair.Key;
+
+            float d = (new Vector2(coord.x, coord.z) -
+                       new Vector2(center.x, center.z)).sqrMagnitude;
+
+            if (d > (viewDistance + 1f) * (viewDistance + 1f))
             {
-                block.UpdateVisibility(this);
-                count++;
-                
-                if (count % 20 == 0)
-                    yield return null;
+                if (pair.Value.root.activeSelf)
+                    pair.Value.root.SetActive(false);
+                continue;
             }
+
+            Vector3 ctr = new Vector3(coord.x * chunkSize + chunkSize * 0.5f,
+                                      baseHeight * 0.5f,
+                                      coord.z * chunkSize + chunkSize * 0.5f);
+
+            bool vis = GeometryUtility.TestPlanesAABB(planes,
+                new Bounds(ctr, new Vector3(chunkSize, baseHeight + heightMultiplier, chunkSize)));
+
+            if (pair.Value.root.activeSelf != vis)
+                pair.Value.root.SetActive(vis);
         }
     }
 
-    void UpdateVisibleBlocksAroundPlayer()
-    {
-        if (!enableFaceCulling) return;
-        
-        Vector3Int playerPos = Vector3Int.RoundToInt(player.position);
-        int updateRadius = 8;
-        int blocksUpdated = 0;
+    // ─── YARDIMCI ──────────────────────────────────────────────────────────
+    Vector3Int WorldToChunk(Vector3 p) =>
+        new Vector3Int(Mathf.FloorToInt(p.x / chunkSize), 0,
+                       Mathf.FloorToInt(p.z / chunkSize));
 
-        // Chunk listesinin kopyasını al
-        var chunksList = new List<Chunk>(chunks.Values);
-        
-        foreach (var chunk in chunksList)
-        {
-            if (!chunk.root.activeSelf) continue;
-            
-            // Block listesinin kopyasını al
-            var blocksList = new List<KeyValuePair<Vector3Int, OptimizedBlock>>(chunk.optimizedBlocks);
-            
-            foreach (var kvp in blocksList)
-            {
-                Vector3Int blockPos = kvp.Key;
-                OptimizedBlock block = kvp.Value;
-                
-                if (block == null || !block.gameObject.activeSelf) continue;
-                
-                if (Vector3Int.Distance(blockPos, playerPos) < updateRadius)
-                {
-                    block.UpdateVisibility(this);
-                    blocksUpdated++;
-                    
-                    if (blocksUpdated >= blocksPerVisibilityUpdate)
-                        return;
-                }
-            }
-        }
+    public int GetSurfaceY(int wx, int wz)
+    {
+        float n = SimplexNoise.Noise(wx * noiseScale, wz * noiseScale);
+        return Mathf.FloorToInt(n * heightMultiplier) + baseHeight;
     }
 
-    public bool HasBlock(Vector3Int pos)
-{
-    return GetBlockAt(pos) != null;
-}
+    public bool HasBlock(Vector3Int pos) => blockPositions.Contains(pos);
 
-    public void RemoveBlockManually(GameObject block)
-{
-    if (block == null) return;
-    
-    Vector3Int pos = Vector3Int.RoundToInt(block.transform.position);
-    Vector3Int chunkCoord = new Vector3Int(
-        Mathf.FloorToInt((float)pos.x / chunkSize),
-        0,
-        Mathf.FloorToInt((float)pos.z / chunkSize)
-    );
-
-    if (chunks.ContainsKey(chunkCoord))
+    public void RemoveBlockManually(GameObject blockObj)
     {
-        chunks[chunkCoord].optimizedBlocks.Remove(pos);
-        chunks[chunkCoord].blocks.Remove(pos);
+        Vector3Int pos = Vector3Int.RoundToInt(blockObj.transform.position);
+        blockPositions.Remove(pos);
+        Vector3Int cc = WorldToChunk(blockObj.transform.position);
+        if (chunks.ContainsKey(cc)) chunks[cc].optimizedBlocks.Remove(pos);
+        Destroy(blockObj);
     }
 
-    Destroy(block);
-
-    // KRİTİK: Blok silindiğinde 6 komşusunu güncelle (Artık görünür olabilirler)
-    if (enableFaceCulling)
+    public void RegisterNewBlock(GameObject blockObj, Vector3Int pos)
     {
-        UpdateNeighborsVisibility(pos);
+        blockPositions.Add(pos);
+        Vector3Int cc = WorldToChunk(blockObj.transform.position);
+        if (!chunks.ContainsKey(cc)) return;
+        OptimizedBlock ob = blockObj.GetComponent<OptimizedBlock>();
+        if (ob != null) chunks[cc].optimizedBlocks[pos] = ob;
     }
-}
-
-    public void RegisterNewBlock(GameObject block, Vector3Int pos)
-{
-    Vector3Int chunkCoord = new Vector3Int(
-        Mathf.FloorToInt((float)pos.x / chunkSize),
-        0,
-        Mathf.FloorToInt((float)pos.z / chunkSize)
-    );
-
-    if (!chunks.ContainsKey(chunkCoord)) return;
-
-    OptimizedBlock opt = block.GetComponent<OptimizedBlock>();
-    if (opt != null)
-    {
-        chunks[chunkCoord].optimizedBlocks[pos] = opt;
-        // Yerleşen bloğun ve komşularının görünürlüğünü güncelle
-        if (enableFaceCulling)
-        {
-            opt.UpdateVisibility(this);
-            UpdateNeighborsVisibility(pos);
-        }
-    }
-}
-
-    private void UpdateNeighborsVisibility(Vector3Int pos)
-{
-    Vector3Int[] neighbors = {
-        pos + Vector3Int.up, pos + Vector3Int.down,
-        pos + Vector3Int.left, pos + Vector3Int.right,
-        pos + Vector3Int.forward, pos + Vector3Int.back
-    };
-
-    foreach (var nPos in neighbors)
-    {
-        OptimizedBlock b = GetBlockAt(nPos);
-        if (b != null) b.UpdateVisibility(this);
-    }
-}
-
-public OptimizedBlock GetBlockAt(Vector3Int pos)
-{
-    Vector3Int chunkCoord = new Vector3Int(
-        Mathf.FloorToInt((float)pos.x / chunkSize),
-        0,
-        Mathf.FloorToInt((float)pos.z / chunkSize)
-    );
-
-    if (chunks.ContainsKey(chunkCoord) && chunks[chunkCoord].optimizedBlocks.ContainsKey(pos))
-        return chunks[chunkCoord].optimizedBlocks[pos];
-    
-    return null;
-}
-
-
 
     public void RegisterNewWater(Vector3Int pos)
     {
-        Vector3Int chunkCoord = new Vector3Int(
-            Mathf.FloorToInt(pos.x / (float)chunkSize),
-            0,
-            Mathf.FloorToInt(pos.z / (float)chunkSize)
-        );
+        if (HasBlock(pos) || waterPrefab == null) return;
+        Vector3Int cc = WorldToChunk((Vector3)pos);
+        Transform parent = chunks.ContainsKey(cc) ? chunks[cc].root.transform : transform;
+        Instantiate(waterPrefab, (Vector3)pos, Quaternion.identity, parent);
+        blockPositions.Add(pos);
+    }
 
-        if (chunks.ContainsKey(chunkCoord))
+    // ─── AĞAÇ ──────────────────────────────────────────────────────────────
+    void GenerateTree(Vector3Int basePos, Transform parent, Chunk chunk)
+    {
+        for (int i = 0; i < 5; i++)
+            PlaceBlock(new Vector3Int(basePos.x, basePos.y + i, basePos.z),
+                       Safe(logTopMaterial), Safe(logSideMaterial), Safe(logTopMaterial),
+                       4, parent, chunk);
+
+        Material lm = Safe(leafMaterial);
+        for (int dx = -2; dx <= 2; dx++)
+        for (int dz = -2; dz <= 2; dz++)
+        for (int dy = 3; dy <= 5; dy++)
         {
-            if (!chunks[chunkCoord].blocks.ContainsKey(pos) && 
-                !chunks[chunkCoord].optimizedBlocks.ContainsKey(pos))
-            {
-                PlaceSpecialBlock(waterPrefab, pos, chunks[chunkCoord].root.transform, chunks[chunkCoord]);
-            }
+            if (Mathf.Abs(dx) == 2 && Mathf.Abs(dz) == 2) continue;
+            Vector3Int lp = new Vector3Int(basePos.x + dx, basePos.y + dy, basePos.z + dz);
+            if (!HasBlock(lp)) PlaceBlock(lp, lm, lm, lm, 5, parent, chunk);
+        }
+    }
+
+    void PlaceBlock(Vector3Int pos, Material top, Material side, Material bot,
+                    int id, Transform parent, Chunk chunk)
+    {
+        try
+        {
+            GameObject go = new GameObject($"B_{pos.x}_{pos.y}_{pos.z}");
+            go.transform.position = (Vector3)pos;
+            go.transform.parent   = parent;
+            OptimizedBlock ob = go.AddComponent<OptimizedBlock>();
+            ob.Initialize(top, side, bot, id);
+            chunk.optimizedBlocks[pos] = ob;
+            blockPositions.Add(pos);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[TerrainGen] PlaceBlock atlandı {pos}: {e.Message}");
         }
     }
 }
